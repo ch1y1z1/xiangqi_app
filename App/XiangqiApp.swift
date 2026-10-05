@@ -5,6 +5,7 @@ struct XiangqiApp: App {
     @StateObject private var store = StudyStore()
     init() {
         #if DEBUG
+        if CommandLine.arguments.contains("--check-image-import") { ImageImportCheck.run() }
         if CommandLine.arguments.contains("--check") { DevelopmentCheck.run() }
         #if os(macOS)
         if CommandLine.arguments.contains("--render-preview") { DevelopmentCheck.render() }

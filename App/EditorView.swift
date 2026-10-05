@@ -10,6 +10,8 @@ struct EditorView: View {
     @State private var undoStack: [[ChessPiece]] = []
     @State private var redoStack: [[ChessPiece]] = []
     @State private var message: String?
+    @State private var importingImage = false
+    @State private var importNotice: String?
     private let original: Study
     private let onSave: (Study, Bool) throws -> Void
 
@@ -38,6 +40,22 @@ struct EditorView: View {
                                 .font(.system(size: 11)).foregroundStyle(Palette.muted)
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
+                    Button { importingImage = true } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "photo.badge.plus").font(.system(size: 20)).foregroundStyle(Palette.teal)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("从图片识别残局").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.ink)
+                                Text("DeepSeek 识别，导入后可校正").font(.system(size: 11)).foregroundStyle(Palette.muted)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.teal)
+                        }.padding(14).background(Palette.card, in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Palette.line, lineWidth: 1))
+                    }.buttonStyle(.plain)
+                    if let importNotice {
+                        Text(importNotice).font(.system(size: 11)).foregroundStyle(Palette.teal)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
+                    }
                     BoardView(pieces: draft.initialPieces, bottom: draft.bottomSide, selected: selected,
                               onTap: place, onDrag: move)
                     HStack {
@@ -82,6 +100,18 @@ struct EditorView: View {
             }.padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 16).background(Palette.paper)
         }
         .background(Palette.paper).tint(Palette.teal)
+        .sheet(isPresented: $importingImage) {
+            ImageImportView { result in
+                replace(result.chessPieces)
+                draft.initialSide = result.sideToMove ?? .red
+                draft.bottomSide = .red
+                removing = false
+                if draft.name == "新残局", let name = result.name, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    draft.name = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
+                }
+                importNotice = result.reviewMessage
+            }
+        }
         #if os(macOS)
         .frame(minWidth: 350, idealWidth: 430, maxWidth: .infinity, minHeight: 620, idealHeight: 880)
         #endif

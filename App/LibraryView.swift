@@ -7,6 +7,7 @@ struct LibraryView: View {
     @State private var renaming: Study?
     @State private var name = ""
     @State private var deleting: Study?
+    @State private var showingSettings = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -63,6 +64,7 @@ struct LibraryView: View {
                 }
                 .environmentObject(store)
             }
+            .sheet(isPresented: $showingSettings) { SettingsView() }
             .alert("为残局命名", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
                 TextField("名称", text: $name)
                 Button("取消", role: .cancel) { renaming = nil }
@@ -103,6 +105,10 @@ struct LibraryView: View {
                 Text("摆一盘棋，慢慢推演。").font(.system(size: 12)).foregroundStyle(Palette.muted)
             }
             Spacer(minLength: 4)
+            Button { showingSettings = true } label: {
+                Image(systemName: "gearshape").font(.system(size: 18)).foregroundStyle(Palette.muted)
+                    .frame(width: 34, height: 42)
+            }.buttonStyle(.plain).accessibilityLabel("设置")
             Button { editor = Study(name: "新残局", pieces: []) } label: {
                 Image(systemName: "plus").font(.system(size: 19, weight: .medium)).foregroundStyle(Palette.teal)
                     .frame(width: 42, height: 42).background(Palette.teal.opacity(0.09), in: RoundedRectangle(cornerRadius: 13))
