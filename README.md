@@ -14,25 +14,40 @@
 
 ## 当前状态与文档
 
-当前已完成需求调研和独立引擎探针，尚未创建完整 App 工程。
+当前已有共享 SwiftUI App 工程，首版核心功能已实现。macOS、iOS 与 iOS Simulator 完整构建通过；关键流程检查在 Mac 和 iOS 26.4 模拟器中通过，模拟器已正常启动 App。真机触摸、震动和性能仍需确认。
 
 - [首版产品规格与页面布局](docs/product-spec.md)
+- [开发、构建与运行方法](docs/development.md)
 - [需求与技术调研报告](docs/xiangqi-ios-research-report.md)
 - [引擎探针与复现方法](docs/research/README.md)
 - [实际探针结果](docs/research/validation-results.json)
+- [首版 App 验证记录](docs/development-validation.json)
 
-已验证 Pikafish 在 Mac 上的进程内搜索，以及 iOS／模拟器目标的 C++ 编译与链接；这些结果不代表完整 App 或 iPhone 运行已经验证。
+已验证保存恢复、多分支、典型红绿灯、包内 NNUE 推荐与取消。页面预览使用实际 SwiftUI 代码离屏渲染，不代表点击／拖动或 iPhone 手感已经验证。
 
-## 开发顺序
+![残局库、编辑与推演的 SwiftUI 页面预览](docs/previews/pages.png)
 
-1. 共享 SwiftUI 工程、棋盘、编辑、保存、多分支手动研究，Mac 可运行。
-2. Pikafish 桥接、推荐与托管、落点与红绿灯。
-3. iPhone 布局、动画、震动与个人设备安装。
+[iPhone 模拟器实际启动画面](docs/previews/ios-library.png)。
+
+## 快速开始
+
+```sh
+git clone --recurse-submodules https://github.com/ch1y1z1/xiangqi_app.git
+cd xiangqi_app
+python3 scripts/prepare-engine.py
+zsh scripts/build.sh mac
+```
+
+需要 Xcode、Python 3 和 7-Zip；已有对应模型时可以向准备脚本传入 `--network`。Mac App 位于 `build/DerivedData/Build/Products/Debug/Xiangqi.app`。
+
+## 后续体验确认
+
+在自己的 iPhone 上签名安装，确认一次离线使用闭环、触摸与拖动、动画／震动、切后台和引擎内存。后续按实际体验继续调整，不先增加全面测试体系。
 
 ## 许可证与上游
 
 本仓库代码采用 [GPL-3.0](LICENSE)。Pikafish 接入时保留上游许可证、版本与修改记录。
 
-当前仓库不包含 Pikafish 源码或 NNUE 权重。权重按[官方独立使用条款](https://github.com/official-pikafish/Networks/blob/master/README.md)管理，后续资源准备步骤会固定对应版本与校验值；App 安装包将包含离线所需资源。
+Pikafish 源码通过固定版本 submodule 引入；NNUE 权重不直接提交仓库。权重按[官方独立使用条款](https://github.com/official-pikafish/Networks/blob/master/README.md)管理，资源准备脚本固定对应版本与校验值；构建的 App 已包含离线所需资源。
 
 上游：[Pikafish](https://github.com/official-pikafish/Pikafish)，技术验证固定为 `Pikafish-2026-09-06`。

@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-05",
+  "configuration": "Debug",
+  "environment": {
+    "host": "Apple Silicon arm64",
+    "xcode": "26.4 (17E192)",
+    "swift": "6.3",
+    "sdk": "26.4",
+    "simulator": "iPhone 17 Pro, iOS 26.4 (23E244)",
+    "minimumOS": { "iOS": "17.0", "macOS": "14.0" }
+  },
+  "engine": {
+    "tag": "Pikafish-2026-09-06",
+    "commit": "4c17cee11f888ae1d48a9494f2e2239f019f0a1f",
+    "networkSHA256": "7d13d73569a9b571ba0eb20cf1596247bc2a42738967e61afef6482b231e900e",
+    "threads": 1,
+    "hashMiB": 32,
+    "multiPV": 1,
+    "memoryBackend": "upstream local allocator; no Unix socket service"
+  },
+  "builds": {
+    "macOS": "passed, ad-hoc signed",
+    "iOS": "passed, unsigned device build",
+    "iOSSimulator": "passed, ad-hoc signed, installed and launched"
+  },
+  "developmentCheck": {
+    "macOS": "CHECK_PASSED",
+    "iOSSimulator": "CHECK_PASSED",
+    "cases": [
+      "initial position has 44 legal moves",
+      "history replay and two preserved branches",
+      "existing branch reused without duplication",
+      "atomic JSON save and restore in temporary application directory",
+      "session back and alternate move navigation",
+      "empty board rejected for study but allowed as draft",
+      "unprotected capture shown, legal recapture suppresses hint, pinned defender cannot recapture",
+      "bundled NNUE returns a legal recommendation after a 250 ms search",
+      "search request interrupted after 50 ms returns cancelled"
+    ]
+  },
+  "visualChecks": [
+    "library, editor and study pages rendered offscreen from actual SwiftUI views",
+    "normal iOS Simulator launch and library framebuffer screenshot"
+  ],
+  "desktopMemoryObservation": {
+    "scope": "one macOS Debug --check process; not an iPhone measurement",
+    "maximumRSSBytes": 458752000,
+    "peakMemoryFootprintBytes": 449120512
+  },
+  "remaining": [
+    "manual tap and drag flow on a device",
+    "physical iPhone signing and installation",
+    "physical iPhone offline flow, animation and haptic feel",
+    "background transition and physical device engine speed, memory and heat"
+  ]
+}
