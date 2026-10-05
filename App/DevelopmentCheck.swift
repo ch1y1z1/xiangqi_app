@@ -35,6 +35,26 @@ enum DevelopmentCheck {
             try require(session.study.nodes.count == 3 && session.study.currentNode.move == alternate, "Session navigation and branch reuse")
             try require(RuleSnapshot(study: Study(name: "Empty", pieces: [])).error != nil, "Draft validation")
 
+            let editingStore = StudyStore(directory: directory.appendingPathComponent("editing"), seedExamples: false)
+            try editingStore.save(study)
+            let renamed = study.editingSetup(name: "  Renamed study  ", pieces: study.initialPieces, side: study.initialSide, bottom: .black)
+            try editingStore.saveEdited(renamed)
+            try require(renamed.name == "Renamed study" && renamed.id == study.id && renamed.nodes == study.nodes && renamed.currentID == study.currentID,
+                        "Renaming preserves current branch and study identity")
+            try require(editingStore.studies.count == 1, "Renaming does not duplicate a study")
+            let editedPieces = study.initialPieces.filter { $0.square != BoardSquare(file: 0, rank: 3) }
+            let edited = renamed.editingSetup(name: renamed.name, pieces: editedPieces, side: renamed.initialSide, bottom: .black)
+            let editingSession = StudySession(study: renamed, persist: { try editingStore.saveEdited($0) })
+            editingSession.setAI(.red)
+            try editingSession.applyEdit(edited)
+            let editedRestored = StudyStore(directory: directory.appendingPathComponent("editing"), seedExamples: false)
+            try require(editedRestored.studies.count == 2 && editingSession.study.id == study.id && editingSession.study.nodes.count == 1,
+                        "Setup edit replaces the study and resets its line")
+            try require(editedRestored.studies.contains { $0.id != study.id && $0.nodes == study.nodes && $0.currentID == study.currentID },
+                        "Original branches survive setup editing in a saved backup")
+            try require(editingSession.rules.error == nil && editingSession.study.bottomSide == .black, "Edited session refreshes rules and orientation")
+            try require(editingSession.aiPaused, "Setup editing pauses AI even if the new starting side belongs to AI")
+
             let target = ChessMove(uci: "a1c1")!
             func hints(_ fen: String) -> [SafeCapture] {
                 RuleSnapshot(study: Study(name: "Hints", pieces: ChessPosition.pieces(fen: fen))).captures
@@ -53,7 +73,7 @@ enum DevelopmentCheck {
             DispatchQueue.global().asyncAfter(deadline: .now() + 0.05, execute: stop)
             let cancelled = AIResult(bridge.search(fen: study.initialFEN, moves: [], networkPath: network, milliseconds: 3000, token: cancelToken))
             try require(cancelled.cancelled, "Search cancellation")
-            print("CHECK_PASSED: legal moves, branches, JSON restore, draft validation, capture hints, bundled AI, cancellation")
+            print("CHECK_PASSED: legal moves, branches, JSON restore, draft validation, rename and setup editing, capture hints, bundled AI, cancellation")
         } catch {
             fputs("CHECK_FAILED: \(error.localizedDescription)\n", stderr)
             status = 1
@@ -99,7 +119,7 @@ enum DevelopmentCheck {
             defer { try? FileManager.default.removeItem(at: temporary) }
             let store = StudyStore(directory: temporary)
             try renderScreen(LibraryView().environmentObject(store), name: "library", folder: folder)
-            try renderScreen(EditorView(study: Study.examples[1], onSave: { _, _ in false }), name: "editor", folder: folder)
+            try renderScreen(EditorView(study: Study.examples[1], onSave: { _, _ in }), name: "editor", folder: folder)
             try renderScreen(StudyView(study: Study.examples[1], persist: { _ in }), name: "study", folder: folder)
             print("Rendered build/previews/board-preview.png from actual SwiftUI board components.")
         } catch { fputs("RENDER_FAILED: \(error)\n", stderr); status = 1 }

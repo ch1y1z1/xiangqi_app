@@ -10,15 +10,12 @@ struct EditorView: View {
     @State private var undoStack: [[ChessPiece]] = []
     @State private var redoStack: [[ChessPiece]] = []
     @State private var message: String?
-    private let onSave: (Study, Bool) -> Bool
+    private let original: Study
+    private let onSave: (Study, Bool) throws -> Void
 
-    init(study: Study, onSave: @escaping (Study, Bool) -> Bool) {
-        var initial = study
-        if study.nodes.count > 1 {
-            initial = Study(name: study.name + " · 新起点", pieces: study.initialPieces, side: study.initialSide)
-            initial.bottomSide = study.bottomSide
-        }
-        _draft = State(initialValue: initial)
+    init(study: Study, onSave: @escaping (Study, Bool) throws -> Void) {
+        original = study
+        _draft = State(initialValue: study)
         self.onSave = onSave
     }
     var body: some View {
@@ -32,14 +29,20 @@ struct EditorView: View {
             }.buttonStyle(.plain).padding(20)
             ScrollView {
                 VStack(spacing: 16) {
-                    TextField("残局名称", text: $draft.name).textFieldStyle(.plain)
-                        .font(.system(size: 21, weight: .medium, design: .serif)).foregroundStyle(Palette.ink)
-                        .padding(.horizontal, 4)
+                    VStack(alignment: .leading, spacing: 7) {
+                        Label("残局名称", systemImage: "pencil").font(.system(size: 11)).foregroundStyle(Palette.muted)
+                        TextField("残局名称", text: $draft.name).textFieldStyle(.plain)
+                            .font(.system(size: 21, weight: .medium, design: .serif)).foregroundStyle(Palette.ink)
+                        if original.nodes.count > 1 {
+                            Text("正在编辑初始局面。只改名会保留推演；修改棋子或先行方后，原线路保存为“编辑前”副本。")
+                                .font(.system(size: 11)).foregroundStyle(Palette.muted)
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
                     BoardView(pieces: draft.initialPieces, bottom: draft.bottomSide, selected: selected,
                               onTap: place, onDrag: move)
                     HStack {
-                        Text(removing ? "点击棋子移除" : selected != nil ? "点击落点，移动选中的棋子" : "选择棋子，再点棋盘放置")
-                            .font(.system(size: 11)).foregroundStyle(Palette.muted)
+                        Text(removing ? "删除模式：点击棋子删除，可连续删除" : selected != nil ? "点击落点移动，或点下方“删除选中棋子”" : "选择棋子，再点棋盘放置")
+                            .font(.system(size: 11)).foregroundStyle(removing ? Palette.red : Palette.muted)
                         Spacer()
                         Button { draft.bottomSide = draft.bottomSide.opponent } label: { Image(systemName: "arrow.up.arrow.down") }
                             .buttonStyle(.plain).foregroundStyle(Palette.teal).accessibilityLabel("翻转棋盘")
@@ -52,21 +55,31 @@ struct EditorView: View {
                         }.pickerStyle(.segmented).labelsHidden()
                     }.padding(.horizontal, 4)
                     HStack(spacing: 16) {
-                        Button { history(back: true) } label: { Image(systemName: "arrow.uturn.backward") }
-                            .disabled(undoStack.isEmpty).accessibilityLabel("撤销摆棋")
-                        Button { history(back: false) } label: { Image(systemName: "arrow.uturn.forward") }
-                            .disabled(redoStack.isEmpty).accessibilityLabel("重做摆棋")
                         Spacer()
                         Button("初始盘") { replace(ChessPosition.pieces(fen: ChessPosition.initialFEN)) }
                         Button("清空") { replace([]) }
-                        Button { removing.toggle(); selected = nil } label: {
-                            Label("移除", systemImage: "eraser").foregroundStyle(removing ? Palette.red : Palette.teal)
-                        }
                     }.font(.system(size: 12)).buttonStyle(.plain).foregroundStyle(Palette.teal).padding(.horizontal, 4)
                 }.padding(.horizontal, 20).padding(.bottom, 18).frame(maxWidth: 490).frame(maxWidth: .infinity)
             }
-            ActionButton(title: "开始推演", icon: "play.fill", prominent: true) { save(start: true) }
-                .padding(20).background(Palette.paper)
+            VStack(spacing: 10) {
+                HStack(spacing: 8) {
+                    Button { history(back: true) } label: { Image(systemName: "arrow.uturn.backward").frame(width: 40, height: 44) }
+                        .disabled(undoStack.isEmpty).opacity(undoStack.isEmpty ? 0.35 : 1).accessibilityLabel("撤销摆棋")
+                    Button { history(back: false) } label: { Image(systemName: "arrow.uturn.forward").frame(width: 40, height: 44) }
+                        .disabled(redoStack.isEmpty).opacity(redoStack.isEmpty ? 0.35 : 1).accessibilityLabel("重做摆棋")
+                    Spacer(minLength: 0)
+                    Button {
+                        if let selected { remove(selected) }
+                        else { removing.toggle(); Feedback.selection() }
+                    } label: {
+                        Label(selected != nil ? "删除选中棋子" : removing ? "完成删除" : "删除棋子", systemImage: removing ? "checkmark" : "trash")
+                            .font(.system(size: 13, weight: .medium)).padding(.horizontal, 14).frame(height: 44)
+                            .foregroundStyle(Palette.red)
+                            .background(Palette.red.opacity(removing ? 0.16 : 0.07), in: RoundedRectangle(cornerRadius: 12))
+                    }
+                }.buttonStyle(.plain).foregroundStyle(Palette.teal)
+                ActionButton(title: "开始推演", icon: "play.fill", prominent: true) { save(start: true) }
+            }.padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 16).background(Palette.paper)
         }
         .background(Palette.paper).tint(Palette.teal)
         #if os(macOS)
@@ -101,7 +114,7 @@ struct EditorView: View {
     }
     private func place(_ square: BoardSquare) {
         if removing {
-            if draft.initialPieces.contains(where: { $0.square == square }) { replace(draft.initialPieces.filter { $0.square != square }) }
+            remove(square)
             return
         }
         if let origin = selected {
@@ -114,8 +127,12 @@ struct EditorView: View {
         replace(draft.initialPieces + [ChessPiece(side: traySide, kind: kind, square: square)])
     }
     private func move(_ from: BoardSquare, _ to: BoardSquare) {
-        guard from != to, draft.initialPieces.contains(where: { $0.square == from }) else { return }
+        guard !removing, from != to, draft.initialPieces.contains(where: { $0.square == from }) else { return }
         replace(ChessPosition.applying(ChessMove(from: from, to: to), to: draft.initialPieces))
+    }
+    private func remove(_ square: BoardSquare) {
+        guard draft.initialPieces.contains(where: { $0.square == square }) else { return }
+        replace(draft.initialPieces.filter { $0.square != square })
     }
     private func replace(_ pieces: [ChessPiece]) {
         undoStack.append(draft.initialPieces); redoStack.removeAll()
@@ -128,12 +145,11 @@ struct EditorView: View {
         selected = nil
     }
     private func save(start: Bool) {
-        draft.name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if draft.name.isEmpty { draft.name = "未命名残局" }
-        let snapshot = RuleSnapshot(study: draft, hints: false)
+        var edited = original.editingSetup(name: draft.name, pieces: draft.initialPieces, side: draft.initialSide, bottom: draft.bottomSide)
+        let snapshot = RuleSnapshot(study: edited, hints: false)
         if start, let error = snapshot.error { message = error; return }
-        draft.isDraft = snapshot.error != nil
-        draft.modifiedAt = Date()
-        if onSave(draft, start) { dismiss() }
+        edited.isDraft = snapshot.error != nil
+        do { try onSave(edited, start); dismiss() }
+        catch { message = "保存失败：\(error.localizedDescription)" }
     }
 }

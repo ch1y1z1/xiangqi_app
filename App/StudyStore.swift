@@ -34,6 +34,16 @@ final class StudyStore: ObservableObject {
         else { studies.append(study) }
         sort()
     }
+    func saveEdited(_ study: Study) throws {
+        if let original = studies.first(where: { $0.id == study.id }),
+           original.nodes.count > 1, original.initialFEN != study.initialFEN {
+            var backup = original.duplicate()
+            backup.name = original.name + " · 编辑前"
+            backup.modifiedAt = original.modifiedAt
+            try save(backup)
+        }
+        try save(study)
+    }
     func delete(_ study: Study) {
         do {
             try FileManager.default.removeItem(at: directory.appendingPathComponent(study.id.uuidString + ".json"))

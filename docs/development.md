@@ -48,7 +48,7 @@ build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --chec
 build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --render-preview
 ```
 
-`--check` 检查合法走子、多分支复用、JSON 保存恢复、草稿校验、少量安全吃子样例、包内模型推荐与取消。它只使用临时残局目录，不改动用户棋库。`--render-preview` 将实际 SwiftUI 页面渲染到离屏视图，输出到 `build/previews/`；它不截取桌面，不模拟用户输入。
+`--check` 检查合法走子、多分支复用、JSON 保存恢复、改名保留分支、重新摆棋的历史副本与 AI 暂停、草稿校验、少量安全吃子样例、包内模型推荐与取消。它只使用临时残局目录，不改动用户棋库。`--render-preview` 将实际 SwiftUI 页面渲染到离屏视图，输出到 `build/previews/`；它不截取桌面，不模拟用户输入。
 
 `--check` 也适用于 iOS Debug 版本；`--render-preview` 仅适用于 Mac Debug。可以选择并启动一个 iPhone 模拟器后，通过 Xcode 运行，或使用命令行安装与检查：
 

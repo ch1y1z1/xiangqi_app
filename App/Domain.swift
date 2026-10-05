@@ -189,6 +189,19 @@ struct Study: Identifiable, Codable, Hashable {
         copy.id = UUID(); copy.name += " · 副本"; copy.createdAt = Date(); copy.modifiedAt = Date()
         return copy
     }
+    func editingSetup(name: String, pieces: [ChessPiece], side: Side, bottom: Side) -> Study {
+        var edited = self
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        edited.name = trimmed.isEmpty ? "未命名残局" : trimmed
+        edited.bottomSide = bottom
+        edited.modifiedAt = Date()
+        if initialFEN != ChessPosition.fen(pieces: pieces, side: side) {
+            edited.initialPieces = pieces; edited.initialSide = side
+            let root = StudyNode()
+            edited.nodes = [root]; edited.rootID = root.id; edited.currentID = root.id
+        }
+        return edited
+    }
     static var examples: [Study] {
         [
             Study(name: "单车研究", pieces: ChessPosition.pieces(fen: "3k5/9/4R4/9/9/9/9/9/9/4K4 w - - 0 1")),

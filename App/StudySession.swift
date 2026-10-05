@@ -26,6 +26,7 @@ final class StudySession: ObservableObject {
     var destinations: Set<BoardSquare> { Set(rules.legalMoves.filter { $0.from == selected }.map(\.to)) }
     var controlledByAI: Bool { aiSide == side && !aiPaused }
     var status: String {
+        if rules.error != nil { return "草稿 · 请编辑棋子后继续" }
         if rules.finished { return rules.outcome + " · 可回退继续研究" }
         if isThinking { return controlledByAI ? "\(side.title)正在思考" : "正在寻找下一步" }
         return rules.inCheck ? "\(side.title)被将军，请应将" : "\(side.title)行棋"
@@ -89,6 +90,14 @@ final class StudySession: ObservableObject {
         invalidate()
     }
     func leave() { stop(); save() }
+    func applyEdit(_ edited: Study) throws {
+        stop()
+        if aiSide != nil { aiPaused = true }
+        try persist(edited)
+        withAnimation(.easeInOut(duration: 0.16)) { study = edited }
+        rules = RuleSnapshot(study: edited, hints: showLights)
+        saved = true
+    }
     func toggleLights() { showLights.toggle(); rules = RuleSnapshot(study: study, hints: showLights) }
     private func refresh() {
         selected = nil; rules = RuleSnapshot(study: study, hints: showLights)

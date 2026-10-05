@@ -26,16 +26,20 @@ struct LibraryView: View {
                                                    description: Text("从一张空棋盘开始，摆出你的第一局。"))
                         }
                         ForEach(store.studies) { study in
-                            Button {
-                                if study.isDraft { editor = study } else { path.append(study.id) }
-                            } label: { studyRow(study) }
-                            .buttonStyle(.plain)
-                            .contextMenu {
-                                Button("改名", systemImage: "pencil") { name = study.name; renaming = study }
-                                Button("复制", systemImage: "doc.on.doc") { store.copy(study) }
-                                Button("编辑初始局面", systemImage: "square.and.pencil") { editor = study }
-                                Button("删除", systemImage: "trash", role: .destructive) { deleting = study }
+                            HStack(spacing: 0) {
+                                Button {
+                                    if study.isDraft { editor = study } else { path.append(study.id) }
+                                } label: { studyRow(study).contentShape(Rectangle()) }
+                                    .buttonStyle(.plain)
+                                Menu { studyActions(study) } label: {
+                                    Image(systemName: "ellipsis").font(.system(size: 17, weight: .medium))
+                                        .foregroundStyle(Palette.teal).frame(width: 40, height: 50)
+                                }.menuStyle(.borderlessButton).menuIndicator(.hidden)
+                                    .accessibilityLabel("\(study.name)的操作")
                             }
+                            .padding(12).background(Palette.card, in: RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Palette.line.opacity(0.75), lineWidth: 1))
+                            .contextMenu { studyActions(study) }
                         }
                     }
                     HStack(spacing: 5) {
@@ -49,16 +53,13 @@ struct LibraryView: View {
             .background(Palette.paper)
             .navigationDestination(for: UUID.self) { id in
                 if let study = store.studies.first(where: { $0.id == id }) {
-                    StudyView(study: study, persist: { try store.save($0) })
+                    StudyView(study: study, persist: { try store.saveEdited($0) })
                 }
             }
             .sheet(item: $editor) { draft in
                 EditorView(study: draft) { study, start in
-                    do {
-                        try store.save(study); editor = nil
-                        if start { path.append(study.id) }
-                        return true
-                    } catch { store.errorMessage = "保存失败：\(error.localizedDescription)"; return false }
+                    try store.saveEdited(study); editor = nil
+                    if start { path.append(study.id) }
                 }
                 .environmentObject(store)
             }
@@ -67,7 +68,8 @@ struct LibraryView: View {
                 Button("取消", role: .cancel) { renaming = nil }
                 Button("保存") {
                     if var study = renaming {
-                        study.name = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "未命名残局" : name
+                        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                        study.name = trimmed.isEmpty ? "未命名残局" : trimmed
                         study.modifiedAt = Date()
                         do { try store.save(study) } catch { store.errorMessage = error.localizedDescription }
                     }
@@ -83,6 +85,12 @@ struct LibraryView: View {
             } message: { Text(store.errorMessage ?? "") }
         }
         .tint(Palette.teal)
+    }
+    @ViewBuilder private func studyActions(_ study: Study) -> some View {
+        Button("修改名称", systemImage: "pencil") { name = study.name; renaming = study }
+        Button("编辑棋子与名称", systemImage: "square.and.pencil") { editor = study }
+        Button("复制", systemImage: "doc.on.doc") { store.copy(study) }
+        Button("删除残局", systemImage: "trash", role: .destructive) { deleting = study }
     }
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
@@ -138,7 +146,6 @@ struct LibraryView: View {
             Spacer(minLength: 0)
             Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted.opacity(0.6))
         }
-        .padding(12).background(Palette.card, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Palette.line.opacity(0.75), lineWidth: 1))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

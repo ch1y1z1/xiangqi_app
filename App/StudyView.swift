@@ -4,6 +4,9 @@ struct StudyView: View {
     @StateObject private var session: StudySession
     @Environment(\.scenePhase) private var scenePhase
     @State private var controllerSheet = false
+    @State private var editor: Study?
+    @State private var renaming = false
+    @State private var name = ""
     @AppStorage("hapticsEnabled") private var haptics = true
 
     init(study: Study, persist: @escaping (Study) throws -> Void) {
@@ -27,7 +30,7 @@ struct StudyView: View {
                 }.opacity(session.showLights ? 1 : 0)
                 linePanel
                 if let suggestion = session.suggestion, let move = suggestion.move { suggestionPanel(suggestion, move: move) }
-                if session.aiPaused {
+                if session.aiPaused && session.rules.error == nil {
                     Button { session.resumeAI() } label: {
                         HStack {
                             Image(systemName: "pause.circle"); Text("托管已暂停"); Spacer(); Text("继续托管"); Image(systemName: "play.fill")
@@ -41,6 +44,19 @@ struct StudyView: View {
         .background(Palette.paper).inlineNavigation()
         .safeAreaInset(edge: .bottom, spacing: 0) { controls }
         .sheet(isPresented: $controllerSheet) { controllerPanel }
+        .sheet(item: $editor) { study in
+            EditorView(study: study) { edited, _ in try session.applyEdit(edited) }
+        }
+        .alert("修改残局名称", isPresented: $renaming) {
+            TextField("残局名称", text: $name)
+            Button("取消", role: .cancel) {}
+            Button("保存") {
+                let study = session.study
+                do {
+                    try session.applyEdit(study.editingSetup(name: name, pieces: study.initialPieces, side: study.initialSide, bottom: study.bottomSide))
+                } catch { session.errorMessage = "保存失败：\(error.localizedDescription)" }
+            }
+        }
         .alert("提示", isPresented: Binding(get: { session.errorMessage != nil }, set: { if !$0 { session.errorMessage = nil } })) {
             Button("知道了") { session.errorMessage = nil }
         } message: { Text(session.errorMessage ?? "") }
@@ -56,6 +72,9 @@ struct StudyView: View {
                 }
                 Spacer()
                 Menu {
+                    Button("修改名称", systemImage: "pencil") { session.stop(); name = session.study.name; renaming = true }
+                    Button("编辑棋子与名称", systemImage: "square.and.pencil") { session.stop(); editor = session.study }
+                    Divider()
                     Button("返回研究起点", systemImage: "backward.end") { session.jump(to: session.study.rootID) }
                     Button(session.study.bottomSide == .red ? "黑方在下" : "红方在下", systemImage: "arrow.up.arrow.down") { session.flip() }
                     Toggle("吃子红绿灯", isOn: Binding(get: { session.showLights }, set: { _ in session.toggleLights() }))
