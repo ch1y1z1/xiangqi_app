@@ -103,8 +103,12 @@ struct DeepSeekRecognizer {
     只输出一个 JSON 对象，不能输出 Markdown。JSON 格式：
     {"name":null,"bottom_side":"red","side_to_move":null,"pieces":[{"side":"black","kind":"king","column":4,"row":0},{"side":"red","kind":"king","column":4,"row":9}],"notes":null}
     棋盘是 9 列、10 行交叉点，不是格子。column 从图片左向右为 0..8，row 从图片上向下为 0..9。
+    请先确定棋盘最上、最下和最左、最右的交叉点，再按网格间距逐行计数，包含没有棋子的空行。
+    行号定位锚点：最上边横线 row=0；上方九宫三条横线为 row=0、1、2；河界上沿 row=4、下沿 row=5；下方九宫三条横线为 row=7、8、9；最下边横线 row=9。
+    特别核对底部倒数第二条横线：它是 row=8，不是 row=7。河界两侧是两行，不能合并；不要因棋子遮住线或某行没有棋子而少数一行。
     坐标始终按图片方向输出，不要自行翻转、使用棋谱的一至九编号或跳过河界两侧的行。
     bottom_side 为图片下方所属阵营，red 或 black；根据将帅与九宫方向判断，不能根据轮到谁走判断。
+    下方九宫里的红帅对应 bottom_side=red，黑将对应 bottom_side=black；不能用棋子托盘的“红方棋子”或选中的按钮判断朝向。输出坐标与朝向之前再核对一次将帅颜色。
     side 为棋子实际颜色，red 或 black；不能简单把上半盘都归黑方、下半盘都归红方。
     kind 只能是 king(帅/将/帥/將)、advisor(仕/士)、elephant(相/象)、horse(马/馬/傌)、rook(车/車/俥)、cannon(炮/砲)、pawn(兵/卒)。
     每个交叉点最多一枚棋子，每方最多 1 将帅、2 士、2 象、2 马、2 车、2 炮、5 兵卒。
@@ -113,14 +117,14 @@ struct DeepSeekRecognizer {
     没有完整棋盘时返回空 pieces，并在 notes 中说明。只识别图片实际存在的棋子，不要补成初始盘。
     """
 
-    static func request(jpeg: Data, key: String) throws -> URLRequest {
+    static func request(jpeg: Data, key: String, thinking: RecognitionThinking = .defaultValue) throws -> URLRequest {
         let key = key.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { throw ImageImportError(message: "请先在设置中保存 DeepSeek API 密钥。") }
-        var request = URLRequest(url: endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 120)
+        var request = URLRequest(url: endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: thinking.timeout)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
+        var body: [String: Any] = [
             "model": model,
             "messages": [
                 ["role": "system", "content": prompt],
@@ -130,16 +134,18 @@ struct DeepSeekRecognizer {
                 ]]
             ],
             "response_format": ["type": "json_object"],
-            "thinking": ["type": "disabled"],
-            "temperature": 0,
-            "max_tokens": 4096,
+            "thinking": ["type": thinking == .off ? "disabled" : "enabled"],
+            "max_tokens": thinking.maxTokens,
             "stream": false
-        ] as [String: Any])
+        ]
+        if thinking == .off { body["temperature"] = 0 }
+        else { body["reasoning_effort"] = thinking.rawValue }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
         return request
     }
 
-    func recognize(jpeg: Data, key: String) async throws -> RecognizedSetup {
-        let (data, response) = try await session.data(for: Self.request(jpeg: jpeg, key: key))
+    func recognize(jpeg: Data, key: String, thinking: RecognitionThinking = .defaultValue) async throws -> RecognizedSetup {
+        let (data, response) = try await session.data(for: Self.request(jpeg: jpeg, key: key, thinking: thinking))
         try Task.checkCancellation()
         guard let response = response as? HTTPURLResponse else { throw ImageImportError(message: "DeepSeek 未返回有效响应。") }
         switch response.statusCode {
@@ -160,10 +166,13 @@ struct DeepSeekRecognizer {
         let completion: Completion
         do { completion = try JSONDecoder().decode(Completion.self, from: data) }
         catch { throw ImageImportError(message: "无法读取 DeepSeek 的识别响应，请重试。") }
-        guard let choice = completion.choices.first, let content = choice.message.content, !content.isEmpty else {
+        guard let choice = completion.choices.first else {
             throw ImageImportError(message: "DeepSeek 没有返回识别结果，请重试。")
         }
         guard choice.finish_reason != "length" else { throw ImageImportError(message: "识别结果不完整，请重试。") }
+        guard let content = choice.message.content, !content.isEmpty else {
+            throw ImageImportError(message: "DeepSeek 没有返回识别结果，请重试。")
+        }
         return try RecognizedSetup.parse(content)
     }
 }

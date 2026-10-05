@@ -5,6 +5,7 @@ struct SettingsView: View {
     @State private var key = ""
     @State private var hasSavedKey = false
     @State private var message: String?
+    @AppStorage(RecognitionThinking.preferenceKey) private var thinking = RecognitionThinking.defaultValue.rawValue
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +26,13 @@ struct SettingsView: View {
                                     .font(.system(size: 12)).foregroundStyle(Palette.muted)
                             }
                         }
+                        Divider().overlay(Palette.line)
+                        Text("识别思考强度").font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.ink)
+                        Picker("识别思考强度", selection: $thinking) {
+                            ForEach(RecognitionThinking.allCases) { level in Text(level.title).tag(level.rawValue) }
+                        }.pickerStyle(.segmented).labelsHidden()
+                        Text((RecognitionThinking(rawValue: thinking) ?? .defaultValue).detail)
+                            .font(.system(size: 12)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
                         Divider().overlay(Palette.line)
                         Text("API 密钥").font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.ink)
                         SecureField("粘贴 DeepSeek API 密钥", text: $key).textFieldStyle(.plain)

@@ -127,7 +127,7 @@ enum DevelopmentCheck {
         } catch { fputs("RENDER_FAILED: \(error)\n", stderr); status = 1 }
         exit(status)
     }
-    private static func renderScreen<V: View>(_ view: V, name: String, folder: URL) throws {
+    static func renderScreen<V: View>(_ view: V, name: String, folder: URL) throws {
         // Offscreen view rendering; no desktop capture, input, or foreground window.
         let size = NSSize(width: 430, height: 890)
         let hosting = NSHostingView(rootView: view.preferredColorScheme(.light))

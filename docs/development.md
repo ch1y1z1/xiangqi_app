@@ -51,7 +51,7 @@ build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --rend
 
 `--check` 检查合法走子、多分支复用、JSON 保存恢复、改名保留分支、重新摆棋的历史副本与 AI 暂停、草稿校验、少量安全吃子样例、包内模型推荐与取消。它只使用临时残局目录，不改动用户棋库。`--render-preview` 将实际 SwiftUI 页面渲染到离屏视图，输出到 `build/previews/`；它不截取桌面，不模拟用户输入。
 
-`--check-image-import` 只验证图片导入：红／黑在下的坐标换算、非法结构拒绝、请求格式、模拟 HTTP 成功响应与无效密钥。使用虚拟密钥并拦截 HTTP，不读取个人密钥，不请求外网，不消耗额度；图片功能变更不需要重跑引擎探针。真实识别效果需要用个人 API 密钥与实际棋盘图片确认。
+`--check-image-import` 只验证图片导入：红／黑在下共 180 个交叉点的坐标换算与命中、FEN 锚点、照片旋转、非法结构拒绝、四档思考请求参数、模拟 HTTP 成功响应与无效密钥。使用虚拟密钥并拦截 HTTP，不读取个人密钥，不请求外网，不消耗额度；图片功能变更不需要重跑引擎探针。少量真实 API 测试和手动复现方法见 [图片识别说明](image-import.md)。
 
 `--check` 也适用于 iOS Debug 版本；`--render-preview` 仅适用于 Mac Debug。可以选择并启动一个 iPhone 模拟器后，通过 Xcode 运行，或使用命令行安装与检查：
 

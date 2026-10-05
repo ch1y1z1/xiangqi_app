@@ -1,6 +1,7 @@
 #if DEBUG
 import Foundation
 import ImageIO
+import SwiftUI
 
 /// Focused, offline checks. Uses a dummy key and intercepts every HTTP request.
 enum ImageImportCheck {
@@ -8,7 +9,7 @@ enum ImageImportCheck {
         Task.detached {
             do {
                 try await check()
-                print("IMAGE_IMPORT_CHECK_PASSED: board orientation, response validation, request format, HTTP import and invalid key")
+                print("IMAGE_IMPORT_CHECK_PASSED: 180 image/render/hit-test intersections, FEN anchors, photo orientation, response validation, four thinking settings, HTTP import and invalid key")
                 exit(0)
             } catch {
                 fputs("IMAGE_IMPORT_CHECK_FAILED: \(error.localizedDescription)\n", stderr)
@@ -22,6 +23,24 @@ enum ImageImportCheck {
         if !condition { throw ImageImportError(message: message) }
     }
     private static func check() async throws {
+        // Check every intersection against rendering, hit-testing and independent corner anchors.
+        for bottom in Side.allCases {
+            let layout = BoardLayout(size: CGSize(width: 390, height: 430), bottom: bottom)
+            for row in 0...9 {
+                for column in 0...8 {
+                    let input = "{\"bottom_side\":\"\(bottom.rawValue)\",\"pieces\":[{\"side\":\"red\",\"kind\":\"rook\",\"column\":\(column),\"row\":\(row)}]}"
+                    let square = try RecognizedSetup.parse(input).chessPieces[0].square
+                    let point = CGPoint(x: layout.origin.x + CGFloat(column) * layout.unit, y: layout.origin.y + CGFloat(row) * layout.unit)
+                    try require(layout.point(square).x == point.x && layout.point(square).y == point.y && layout.square(point) == square,
+                                "Image/render/hit-test coordinate mismatch")
+                    if column == 0 && row == 0 { try require(square.uci == (bottom == .red ? "a9" : "i0"), "Top-left anchor") }
+                    if column == 8 && row == 9 { try require(square.uci == (bottom == .red ? "i0" : "a9"), "Bottom-right anchor") }
+                }
+            }
+        }
+        let initial = ChessPosition.pieces(fen: ChessPosition.initialFEN)
+        try require(initial.filter { $0.side == .red && $0.kind == .pawn }.allSatisfy { $0.square.rank == 3 }
+                    && initial.filter { $0.side == .black && $0.kind == .pawn }.allSatisfy { $0.square.rank == 6 }, "FEN rank anchors")
         // A photo's EXIF rotation must be applied before showing or uploading it.
         let context = CGContext(data: nil, width: 80, height: 120, bitsPerComponent: 8, bytesPerRow: 0,
                                 space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
@@ -75,6 +94,15 @@ enum ImageImportCheck {
         try require(request.url == DeepSeekRecognizer.endpoint && request.httpMethod == "POST", "Official endpoint")
         try require(body["model"] as? String == "deepseek-v4-flash" && (body["response_format"] as? [String: String])?["type"] == "json_object", "Model and structured output")
         try require(image["url"] == "data:image/jpeg;base64," + jpeg.base64EncodedString(), "Inline image request")
+        try require((body["thinking"] as? [String: String])?["type"] == "enabled" && body["reasoning_effort"] as? String == "high", "Default high thinking")
+        for level in RecognitionThinking.allCases {
+            let request = try DeepSeekRecognizer.request(jpeg: jpeg, key: "dummy-key", thinking: level)
+            let body = try JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
+            try require((body["thinking"] as? [String: String])?["type"] == (level == .off ? "disabled" : "enabled"), "Thinking toggle")
+            try require(body["reasoning_effort"] as? String == (level == .off ? nil : level.rawValue), "Official effort setting")
+            try require(body["max_tokens"] as? Int == level.maxTokens && request.timeoutInterval == level.timeout, "Thinking output/time budget")
+            try require(level == .off ? body["temperature"] != nil : body["temperature"] == nil, "Temperature only applies without thinking")
+        }
 
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockDeepSeek.self]
@@ -83,6 +111,13 @@ enum ImageImportCheck {
         MockDeepSeek.data = try JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": redBottom], "finish_reason": "stop"]]])
         let result = try await DeepSeekRecognizer(session: session).recognize(jpeg: jpeg, key: "dummy-key")
         try require(result.chessPieces.count == 3 && result.name == "单车残局", "HTTP response imports structured board")
+        MockDeepSeek.data = try JSONSerialization.data(withJSONObject: ["choices": [["message": ["content": ""], "finish_reason": "length"]]])
+        do {
+            _ = try await DeepSeekRecognizer(session: session).recognize(jpeg: jpeg, key: "dummy-key")
+            throw NSError(domain: "ImageImportCheck", code: 3, userInfo: [NSLocalizedDescriptionKey: "Truncated reasoning was accepted"])
+        } catch let error as ImageImportError {
+            try require(error.message.contains("不完整"), "Thinking budget exhausted before final JSON")
+        }
         MockDeepSeek.status = 401
         do {
             _ = try await DeepSeekRecognizer(session: session).recognize(jpeg: jpeg, key: "dummy-key")
@@ -91,6 +126,66 @@ enum ImageImportCheck {
             try require(error.message.contains("密钥无效"), "Actionable invalid-key message")
         }
     }
+
+    #if os(macOS)
+    /// Writes public image/request fixtures only. No keychain access or network requests.
+    @MainActor static func prepareAudit() -> Never {
+        do {
+            let folder = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("build/recognition-audit")
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            var black = Study.examples[1]
+            black.bottomSide = .black
+            let fixtures: [(String, Study)] = [("editor-red-5", Study.examples[1]), ("editor-black-5", black),
+                                               ("editor-red-32", Study(name: "初始盘", pieces: ChessPosition.pieces(fen: ChessPosition.initialFEN)))]
+            var manifest: [[String: String]] = []
+            for (name, study) in fixtures {
+                try DevelopmentCheck.renderScreen(EditorView(study: study, onSave: { _, _ in }), name: name, folder: folder)
+                let image = try RecognitionImage(data: Data(contentsOf: folder.appendingPathComponent(name + ".png")))
+                let levels: [RecognitionThinking] = name == "editor-red-32" ? [.high] : name == "editor-red-5" ? [.off, .high, .max] : [.off, .high]
+                for level in levels {
+                    let test = name + "-" + level.rawValue
+                    let request = try DeepSeekRecognizer.request(jpeg: image.jpeg, key: "audit-dummy", thinking: level)
+                    try request.httpBody!.write(to: folder.appendingPathComponent(test + "-request.json"))
+                    manifest.append(["test": test, "thinking": level.rawValue, "expected_fen": study.initialFEN,
+                                     "timeout": String(level.timeout)])
+                }
+            }
+            try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
+                .write(to: folder.appendingPathComponent("manifest.json"))
+            print("Prepared \(manifest.count) real-API request fixtures under build/recognition-audit; no credentials stored.")
+            exit(0)
+        } catch { fputs("AUDIT_PREPARE_FAILED: \(error.localizedDescription)\n", stderr); exit(1) }
+    }
+
+    static func auditResponses() -> Never {
+        do {
+            let folder = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("build/recognition-audit")
+            let manifest = try JSONDecoder().decode([[String: String]].self, from: Data(contentsOf: folder.appendingPathComponent("manifest.json")))
+            var report: [[String: Any]] = []
+            func identities(_ pieces: [ChessPiece]) -> Set<String> { Set(pieces.map { "\($0.side.rawValue):\($0.kind.rawValue):\($0.square.uci)" }) }
+            for fixture in manifest {
+                let name = fixture["test"]!
+                let expected = identities(ChessPosition.pieces(fen: fixture["expected_fen"]!))
+                var entry: [String: Any] = ["test": name, "expected": expected.count]
+                do {
+                    let content = try String(contentsOf: folder.appendingPathComponent(name + "-content.json"), encoding: .utf8)
+                    let result = try RecognizedSetup.parse(content)
+                    let actual = identities(result.chessPieces)
+                    entry["recognized"] = actual.count
+                    entry["correct"] = expected.intersection(actual).count
+                    entry["missing"] = expected.subtracting(actual).sorted()
+                    entry["extra"] = actual.subtracting(expected).sorted()
+                    entry["bottom_side"] = result.bottomSide.rawValue
+                } catch { entry["error"] = error.localizedDescription }
+                report.append(entry)
+            }
+            let data = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: folder.appendingPathComponent("swift-results.json"))
+            print(String(decoding: data, as: UTF8.self))
+            exit(0)
+        } catch { fputs("AUDIT_RESPONSES_FAILED: \(error.localizedDescription)\n", stderr); exit(1) }
+    }
+    #endif
 }
 
 private final class MockDeepSeek: URLProtocol {

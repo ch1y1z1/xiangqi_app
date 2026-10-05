@@ -8,6 +8,8 @@ struct XiangqiApp: App {
         if CommandLine.arguments.contains("--check-image-import") { ImageImportCheck.run() }
         if CommandLine.arguments.contains("--check") { DevelopmentCheck.run() }
         #if os(macOS)
+        if CommandLine.arguments.contains("--prepare-recognition-audit") { ImageImportCheck.prepareAudit() }
+        if CommandLine.arguments.contains("--audit-recognition-responses") { ImageImportCheck.auditResponses() }
         if CommandLine.arguments.contains("--render-preview") { DevelopmentCheck.render() }
         #endif
         #endif

@@ -52,7 +52,7 @@ struct ImageImportView: View {
                     Button { showingSettings = true } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "key")
-                            Text(hasKey ? "DeepSeek 已配置 · 修改密钥" : "先设置 DeepSeek API 密钥")
+                            Text(hasKey ? "DeepSeek 设置 · 密钥与思考强度" : "先设置 DeepSeek API 密钥")
                             Spacer()
                             Image(systemName: "chevron.right")
                         }.font(.system(size: 13, weight: .medium)).foregroundStyle(Palette.teal)
@@ -129,7 +129,8 @@ struct ImageImportView: View {
         work = Task { @MainActor in
             do {
                 let key = try DeepSeekKeychain.load()
-                let result = try await DeepSeekRecognizer().recognize(jpeg: image.jpeg, key: key)
+                let thinking = RecognitionThinking.saved
+                let result = try await DeepSeekRecognizer().recognize(jpeg: image.jpeg, key: key, thinking: thinking)
                 try Task.checkCancellation()
                 recognizing = false
                 onImport(result)
