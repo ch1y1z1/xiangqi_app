@@ -29,6 +29,8 @@ Mac 产物为 `build/DerivedData/Build/Products/Debug/Xiangqi.app`，脚本会�
 
 iOS 产物只做未签名构建检查。安装到自己的 iPhone 时，在 Xcode 配置个人 Team、连接手机并选择设备运行。
 
+需要 IPA 时运行 `zsh scripts/package-ipa.sh Debug`，输出包含离线资源的未签名真机包；重新签名或 Xcode 安装步骤见 [IPA 与真机调试](ios-device.md)。
+
 Xcode 的资产目录编译也可能需要已安装的 iOS Simulator runtime。缺少组件时可在 Xcode 的 Settings → Components 安装，或执行：
 
 ```sh

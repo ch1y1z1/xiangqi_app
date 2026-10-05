@@ -18,6 +18,7 @@
 
 - [首版产品规格与页面布局](docs/product-spec.md)
 - [开发、构建与运行方法](docs/development.md)
+- [IPA 与真机调试](docs/ios-device.md)
 - [需求与技术调研报告](docs/xiangqi-ios-research-report.md)
 - [引擎探针与复现方法](docs/research/README.md)
 - [实际探针结果](docs/research/validation-results.json)
