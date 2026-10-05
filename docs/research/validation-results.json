@@ -1,0 +1,508 @@
+{
+  "research_date": "2026-10-05",
+  "version": "Pikafish-2026-09-06",
+  "source_commit": "4c17cee11f888ae1d48a9494f2e2239f019f0a1f",
+  "engine_source_modified": false,
+  "environment": {
+    "xcode": "26.4",
+    "xcode_build": "17E192",
+    "swift": "6.3",
+    "host_arch": "arm64",
+    "ios_sdk": "26.4",
+    "simulator_runtime_installed": false,
+    "usable_device_connected": false
+  },
+  "nnue": {
+    "bytes": 50706378,
+    "sha256": "7d13d73569a9b571ba0eb20cf1596247bc2a42738967e61afef6482b231e900e",
+    "engine_reported_structure_mib": 64
+  },
+  "configuration": {
+    "threads": 1,
+    "hash_mib": 32,
+    "multipv": 3,
+    "timed_search_ms": 250,
+    "compiler_optimization": "O1",
+    "deployment_ios": "17.0"
+  },
+  "targets": {
+    "ios": {
+      "translation_units": 35,
+      "passed": 35,
+      "archive_bytes": 1417336,
+      "link_exit_code": 0,
+      "platform": "IOS",
+      "compile_seconds_sum": 31.15,
+      "files": [
+        {
+          "source": "memory.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "thread.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "timeman.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "ucioption.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "misc.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "bitboard.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "score.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "attacks.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "benchmark.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "movepick.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "tune.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "evaluate.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "search.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "engine.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "movegen.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "tt.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "position.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "uci.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/network.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/nnue_accumulator.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/nnue_misc.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/huf_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_decompress_block.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_ddict.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/xxhash.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/fse_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/debug.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/pool.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/threading.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/entropy_common.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/zstd_common.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/error_private.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/features/half_ka_v2_hm.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/features/full_threats.cpp",
+          "exit_code": 0
+        }
+      ]
+    },
+    "sim": {
+      "translation_units": 35,
+      "passed": 35,
+      "archive_bytes": 1413712,
+      "link_exit_code": 0,
+      "platform": "IOSSIMULATOR",
+      "compile_seconds_sum": 45.43,
+      "files": [
+        {
+          "source": "memory.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "thread.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "timeman.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "ucioption.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "misc.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "bitboard.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "score.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "attacks.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "benchmark.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "movepick.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "tune.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "evaluate.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "search.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "engine.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "movegen.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "tt.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "position.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "uci.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/network.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/nnue_accumulator.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/nnue_misc.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/huf_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_decompress_block.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_ddict.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/xxhash.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/fse_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/debug.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/pool.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/threading.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/entropy_common.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/zstd_common.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/error_private.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/features/half_ka_v2_hm.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/features/full_threats.cpp",
+          "exit_code": 0
+        }
+      ]
+    },
+    "mac": {
+      "translation_units": 35,
+      "passed": 35,
+      "archive_bytes": 1414368,
+      "link_exit_code": 0,
+      "platform": "MACOS",
+      "compile_seconds_sum": 47.98,
+      "files": [
+        {
+          "source": "memory.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "thread.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "timeman.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "ucioption.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "misc.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "bitboard.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "score.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "attacks.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "benchmark.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "movepick.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "tune.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "evaluate.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "search.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "engine.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "movegen.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "tt.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "position.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "uci.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/network.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/nnue_accumulator.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/nnue_misc.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/huf_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_decompress_block.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_ddict.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/decompress/zstd_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/xxhash.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/fse_decompress.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/debug.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/pool.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/threading.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/entropy_common.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/zstd_common.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "external/common/error_private.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/features/half_ka_v2_hm.cpp",
+          "exit_code": 0
+        },
+        {
+          "source": "nnue/features/full_threats.cpp",
+          "exit_code": 0
+        }
+      ]
+    }
+  },
+  "mac_runtime": {
+    "exit_code": 0,
+    "initial_legal_moves": 44,
+    "empty_board_error": "Unsupported position. Incorrect number of kings.",
+    "illegal_move_error": "Illegal move: a0a9",
+    "facing_kings_error": "Unsupported position. King can be captured.",
+    "timed_search": {
+      "bestmove": "b2e2",
+      "depth": 12,
+      "updates": 36
+    },
+    "endgame_search": {
+      "bestmove": "e7d7",
+      "depth": 245,
+      "updates": 735
+    },
+    "stop_latency_ms_single_sample": 0,
+    "max_rss_bytes": 439861248,
+    "peak_memory_footprint_bytes": 378373952,
+    "status": "PROBE_PASSED"
+  },
+  "limitations": [
+    "No complete Swift app was built.",
+    "No iOS binaries were executed.",
+    "The console probes are not installable iOS app bundles.",
+    "macOS uses the desktop shared-memory backend; the iOS sandbox and a local-memory adaptation were not exercised.",
+    "No iPhone speed, thermal, haptic, storage or distribution validation has been performed."
+  ]
+}

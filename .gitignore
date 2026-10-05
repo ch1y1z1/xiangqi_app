@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Xcode / Swift build outputs and personal settings
+DerivedData/
+build/
+.build/
+xcuserdata/
+*.xcuserstate
+*.o
+*.a
+*.dSYM/
+*.ipa
+*.xcarchive/
+
+# Local engine weights; obtain the pinned resource separately
+*.nnue
+
+# Local Python output and credentials
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
