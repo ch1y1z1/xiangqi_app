@@ -32,7 +32,9 @@ enum DeepSeekKeychain {
         let status = SecItemUpdate(query as CFDictionary, values as CFDictionary)
         if status == errSecItemNotFound {
             var item = query.merging(values) { _, new in new }
+            #if os(iOS)
             item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            #endif
             let added = SecItemAdd(item as CFDictionary, nil)
             guard added == errSecSuccess else { throw error(added, action: "保存") }
         } else if status != errSecSuccess { throw error(status, action: "保存") }
