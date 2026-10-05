@@ -4,11 +4,13 @@
 
 ## 从 GitHub CI 下载
 
-[Unsigned iOS IPA](https://github.com/ch1y1z1/xiangqi_app/actions/workflows/unsigned-ipa.yml) 在推送到 `main`、向 `main` 提交 PR 时自动构建 Release，也可点击 **Run workflow** 手动选择 Release 或 Debug。
+[最新正式 Release](https://github.com/ch1y1z1/xiangqi_app/releases/latest) 提供可直接下载的 `.ipa`、`SHA256SUMS.txt` 和对应 `*-dSYM.zip`，无需下载外层 artifact 压缩包，附件不受 Actions 的 14 天保留期限制。
 
-构建成功后，在该次运行的 **Artifacts** 下载 `unsigned-ipa-Release`（或 Debug），解压即可得到 IPA 和 `SHA256SUMS.txt`。对应 dSYM 位于另一个 `debug-symbols-Release` 产物中。下载 Actions artifact 需要登录 GitHub；产物保留 14 天，过期后可重新手动构建。
+[Unsigned iOS IPA](https://github.com/ch1y1z1/xiangqi_app/actions/workflows/unsigned-ipa.yml) 在每次分支 push 时构建 Release；成功后，以 `build-运行编号-重跑次数-提交短哈希` 创建独立 GitHub Release，并绑定该次 push 的准确提交。`main` 生成正式版本，其他分支生成预发布版本。连续 push 不取消之前的构建，较旧提交也不会覆盖当前 `main` 的最新版本。自动创建的 tag 不会再次触发构建。
 
-CI 使用 GitHub 的 `macos-26` ARM runner 与 Xcode 26.6，复用本地打包脚本；模型自动下载并校验，后续构建缓存模型。无需 Apple 证书、描述文件或额外 Secrets。SDK 工具版本依据 [GitHub runner 软件清单](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md)，产物下载方式见 [GitHub artifact 说明](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)。
+向 `main` 提交 PR 时只构建，不发布；也可点击 **Run workflow** 手动选择 Release 或 Debug。所有成功构建仍会在该次运行的 **Artifacts** 提供 `unsigned-ipa-Release`（或 Debug），解压得到 IPA 和校验文件，另有 `debug-symbols-Release` 产物。下载 Actions artifact 需要登录 GitHub；产物保留 14 天。
+
+CI 使用 GitHub 的 `macos-26` ARM runner 与 Xcode 26.6，复用本地打包脚本；模型自动下载并校验，后续构建缓存模型。独立发布任务下载并复核 IPA 校验值，再使用仓库自带的 `GITHUB_TOKEN` 发布；仅该任务有 `contents: write` 权限。无需 Apple 证书、描述文件或额外 Secrets。SDK 工具版本依据 [GitHub runner 软件清单](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md)，产物下载方式见 [GitHub artifact 说明](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)。
 
 ## 生成 IPA
 

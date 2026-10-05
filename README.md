@@ -43,7 +43,9 @@ zsh scripts/build.sh mac
 
 需要 Xcode、Python 3 和 7-Zip；已有对应模型时可以向准备脚本传入 `--network`。Mac App 位于 `build/DerivedData/Build/Products/Debug/Xiangqi.app`。
 
-也可以直接从 [GitHub Actions](https://github.com/ch1y1z1/xiangqi_app/actions/workflows/unsigned-ipa.yml) 的成功运行中下载未签名 IPA。推送／PR 默认构建 Release，手动触发可选 Debug；包含离线模型、校验文件及独立调试符号，保留 14 天，安装前需要个人重新签名。
+也可以直接从 [最新 GitHub Release](https://github.com/ch1y1z1/xiangqi_app/releases/latest) 下载未签名 IPA、校验文件与对应调试符号。每次分支 push 成功构建后自动发布独立版本，`main` 发布正式版本，其他分支发布预发布版本；连续推送保留每次构建，附件不受 14 天过期限制。安装前需要个人重新签名。
+
+[GitHub Actions](https://github.com/ch1y1z1/xiangqi_app/actions/workflows/unsigned-ipa.yml) 中也保留构建产物 14 天。PR 默认构建 Release，手动触发可选 Debug；这两类运行不自动发版。
 
 ## 后续体验确认
 
