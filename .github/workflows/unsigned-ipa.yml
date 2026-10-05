@@ -1,0 +1,115 @@
+name: Unsigned iOS IPA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: Build configuration
+        type: choice
+        options: [Release, Debug]
+        default: Release
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    name: Build unsigned device IPA
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      BUILD_CONFIGURATION: ${{ inputs.configuration || 'Release' }}
+    steps:
+      - name: Check out app and pinned Pikafish
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Show build environment
+        run: |
+          xcodebuild -version
+          python3 --version
+          command -v 7z
+
+      - name: Cache offline NNUE
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: Resources/pikafish.nnue
+          key: pikafish-nnue-7d13d73569a9b571ba0eb20cf1596247bc2a42738967e61afef6482b231e900e
+
+      - name: Archive and package unsigned IPA
+        shell: bash
+        run: |
+          mkdir -p build
+          zsh scripts/package-ipa.sh "$BUILD_CONFIGURATION" 2>&1 | tee build/ci-build.log
+
+      - name: Verify package and preserve debug symbols
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import plistlib
+          import zipfile
+          from pathlib import Path
+
+          ipa = next(Path('build/ipa').glob('*.ipa'))
+          with zipfile.ZipFile(ipa) as package:
+              assert package.testzip() is None, 'Corrupt IPA'
+              info = plistlib.loads(package.read('Payload/Xiangqi.app/Info.plist'))
+              assert info['CFBundleSupportedPlatforms'] == ['iPhoneOS'], 'Not a device build'
+              assert 'Payload/Xiangqi.app/pikafish.nnue' in package.namelist(), 'Missing offline model'
+              assert not any(name.endswith('embedded.mobileprovision') for name in package.namelist()), 'Unexpected provisioning profile'
+          print(f'Verified unsigned device package: {ipa.name}')
+          PY
+          (
+            cd build/ipa
+            shasum -a 256 ./*.ipa > SHA256SUMS.txt
+          )
+          ditto -c -k --keepParent --norsrc --noextattr \
+            "build/Archives/Xiangqi-${BUILD_CONFIGURATION}-unsigned.xcarchive/dSYMs/Xiangqi.app.dSYM" \
+            "build/ipa/Xiangqi-${BUILD_CONFIGURATION}-dSYM.zip"
+
+      - name: Upload unsigned IPA and checksum
+        id: ipa
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unsigned-ipa-${{ env.BUILD_CONFIGURATION }}
+          path: |
+            build/ipa/*.ipa
+            build/ipa/SHA256SUMS.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Upload matching debug symbols
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: debug-symbols-${{ env.BUILD_CONFIGURATION }}
+          path: build/ipa/*-dSYM.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Add download link to run summary
+        env:
+          IPA_ARTIFACT_URL: ${{ steps.ipa.outputs.artifact-url }}
+        run: |
+          printf '### 未签名 iOS IPA\n\n配置：%s · arm64 · iOS 17+ · 包含离线模型\n\n[下载 IPA 与 SHA-256 校验文件](%s)\n\n安装前需使用自己的证书与描述文件重新签名。产物保留 14 天。\n' \
+            "$BUILD_CONFIGURATION" "$IPA_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build log if the build fails
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: failed-build-log
+          path: build/ci-build.log
+          retention-days: 7

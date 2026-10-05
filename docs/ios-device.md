@@ -2,6 +2,14 @@
 
 当前可以在没有签名证书的环境中生成设备用 IPA，供个人签名工具重新签名。这个 IPA 不是模拟器包；它使用 arm64、iOS 17+，已包含离线 NNUE。
 
+## 从 GitHub CI 下载
+
+[Unsigned iOS IPA](https://github.com/ch1y1z1/xiangqi_app/actions/workflows/unsigned-ipa.yml) 在推送到 `main`、向 `main` 提交 PR 时自动构建 Release，也可点击 **Run workflow** 手动选择 Release 或 Debug。
+
+构建成功后，在该次运行的 **Artifacts** 下载 `unsigned-ipa-Release`（或 Debug），解压即可得到 IPA 和 `SHA256SUMS.txt`。对应 dSYM 位于另一个 `debug-symbols-Release` 产物中。下载 Actions artifact 需要登录 GitHub；产物保留 14 天，过期后可重新手动构建。
+
+CI 使用 GitHub 的 `macos-26` ARM runner 与 Xcode 26.6，复用本地打包脚本；模型自动下载并校验，后续构建缓存模型。无需 Apple 证书、描述文件或额外 Secrets。SDK 工具版本依据 [GitHub runner 软件清单](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md)，产物下载方式见 [GitHub artifact 说明](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts)。
+
 ## 生成 IPA
 
 ```sh

@@ -1,5 +1,7 @@
 # 象棋残局研究 App
 
+[![Unsigned iOS IPA](https://github.com/ch1y1z1/xiangqi_app/actions/workflows/unsigned-ipa.yml/badge.svg)](https://github.com/ch1y1z1/xiangqi_app/actions/workflows/unsigned-ipa.yml)
+
 面向个人使用的离线象棋残局研究工具，主要支持 iPhone。采用 Swift／SwiftUI 与进程内 Pikafish，初期使用原生 macOS 入口快速开发调试，同时保持 iOS 目标可编译。
 
 ## 首版功能
@@ -40,6 +42,8 @@ zsh scripts/build.sh mac
 ```
 
 需要 Xcode、Python 3 和 7-Zip；已有对应模型时可以向准备脚本传入 `--network`。Mac App 位于 `build/DerivedData/Build/Products/Debug/Xiangqi.app`。
+
+也可以直接从 [GitHub Actions](https://github.com/ch1y1z1/xiangqi_app/actions/workflows/unsigned-ipa.yml) 的成功运行中下载未签名 IPA。推送／PR 默认构建 Release，手动触发可选 Debug；包含离线模型、校验文件及独立调试符号，保留 14 天，安装前需要个人重新签名。
 
 ## 后续体验确认
 
