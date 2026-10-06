@@ -1,0 +1,1300 @@
+{
+  "date": "2026-10-06",
+  "scope": "Two user-supplied JJ Xiangqi full screenshots. One request per image and app-exposed thinking setting. DeepSeek official Chat Completions; Luna custom Responses. No crops, overlays, edited prompt, automatic retries or repeated trials.",
+  "models": {
+    "DeepSeek": {
+      "requested": "deepseek-v4-flash",
+      "returned": "deepseek-flash",
+      "api": "chatCompletions"
+    },
+    "Luna": {
+      "requested": "cx/gpt-5.6-luna",
+      "returned": null,
+      "api": "responses",
+      "note": "The proxy Responses envelope does not identify the returned model."
+    }
+  },
+  "method": "Human ground truth annotated before requesting either model. Exact app RecognitionImage JPEG processing and ImageRecognizer/DeepSeekRecognizer request generation. Python performs authorized real HTTP calls; Swift RecognizedSetup validation and coordinate normalization compare against FEN. Decodable responses rejected by app validation retain piece metrics for diagnosis.",
+  "metric": "Correct piece requires side, kind and normalized square all match. Whole-board success also requires a complete response, app structural validation and exact piece list without extras or duplicates. Missing final output has no measurable piece score and counts as whole-board failure.",
+  "prompt_sha256": "c02f83c23cc8097fea178736f33a3764da1e17b48449a8389992ca6ee8f941d8",
+  "same_uploaded_jpeg_per_image_for_all_models_and_settings": true,
+  "credential_handling": "Keys entered with echo disabled, used only in memory, not saved to app settings, Keychain, source, logs or Git. Original user images are not published; only final recognition text and token usage retained in ignored build directory.",
+  "fixtures": [
+    {
+      "fixture": "jj-level-32",
+      "filename": "IMG_4526.png",
+      "original_sha256": "2bbc7563312dc2d5c6b6f3985a84aa2a1dc1a300e69fdc645b0fc4094493d97b",
+      "original_pixels": [
+        1284,
+        2778
+      ],
+      "uploaded_jpeg_sha256": "93c9bcdcdbee6762780058071405d9ffbda019dafb3b980100b92b1526a515d4",
+      "expected_pieces": 14,
+      "expected_bottom_side": "red",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "manual_image_space_pieces": [
+        {
+          "side": "black",
+          "kind": "king",
+          "column": 4,
+          "row": 0
+        },
+        {
+          "side": "red",
+          "kind": "pawn",
+          "column": 2,
+          "row": 1
+        },
+        {
+          "side": "red",
+          "kind": "rook",
+          "column": 3,
+          "row": 1
+        },
+        {
+          "side": "red",
+          "kind": "pawn",
+          "column": 5,
+          "row": 1
+        },
+        {
+          "side": "black",
+          "kind": "horse",
+          "column": 3,
+          "row": 2
+        },
+        {
+          "side": "red",
+          "kind": "cannon",
+          "column": 0,
+          "row": 3
+        },
+        {
+          "side": "red",
+          "kind": "horse",
+          "column": 0,
+          "row": 4
+        },
+        {
+          "side": "black",
+          "kind": "rook",
+          "column": 4,
+          "row": 4
+        },
+        {
+          "side": "red",
+          "kind": "rook",
+          "column": 2,
+          "row": 5
+        },
+        {
+          "side": "black",
+          "kind": "pawn",
+          "column": 4,
+          "row": 7
+        },
+        {
+          "side": "black",
+          "kind": "rook",
+          "column": 0,
+          "row": 8
+        },
+        {
+          "side": "black",
+          "kind": "pawn",
+          "column": 3,
+          "row": 8
+        },
+        {
+          "side": "black",
+          "kind": "pawn",
+          "column": 5,
+          "row": 8
+        },
+        {
+          "side": "red",
+          "kind": "king",
+          "column": 4,
+          "row": 9
+        }
+      ]
+    },
+    {
+      "fixture": "jj-level-31",
+      "filename": "IMG_4525.png",
+      "original_sha256": "3eef7308535f7b2d6d46c88f8638a5f24888c258853dab1d27f1cccf46658044",
+      "original_pixels": [
+        1284,
+        2778
+      ],
+      "uploaded_jpeg_sha256": "852beeaedd733ea2f7c1de34036bd9bc22015c332a75978aeb5ad683ec21f95a",
+      "expected_pieces": 16,
+      "expected_bottom_side": "red",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "manual_image_space_pieces": [
+        {
+          "side": "black",
+          "kind": "elephant",
+          "column": 2,
+          "row": 0
+        },
+        {
+          "side": "black",
+          "kind": "advisor",
+          "column": 3,
+          "row": 0
+        },
+        {
+          "side": "black",
+          "kind": "king",
+          "column": 4,
+          "row": 0
+        },
+        {
+          "side": "black",
+          "kind": "rook",
+          "column": 7,
+          "row": 0
+        },
+        {
+          "side": "black",
+          "kind": "advisor",
+          "column": 4,
+          "row": 1
+        },
+        {
+          "side": "red",
+          "kind": "pawn",
+          "column": 5,
+          "row": 1
+        },
+        {
+          "side": "red",
+          "kind": "rook",
+          "column": 8,
+          "row": 1
+        },
+        {
+          "side": "red",
+          "kind": "rook",
+          "column": 2,
+          "row": 2
+        },
+        {
+          "side": "black",
+          "kind": "elephant",
+          "column": 4,
+          "row": 2
+        },
+        {
+          "side": "red",
+          "kind": "horse",
+          "column": 2,
+          "row": 3
+        },
+        {
+          "side": "red",
+          "kind": "cannon",
+          "column": 2,
+          "row": 5
+        },
+        {
+          "side": "red",
+          "kind": "pawn",
+          "column": 4,
+          "row": 6
+        },
+        {
+          "side": "black",
+          "kind": "pawn",
+          "column": 3,
+          "row": 8
+        },
+        {
+          "side": "black",
+          "kind": "rook",
+          "column": 4,
+          "row": 8
+        },
+        {
+          "side": "red",
+          "kind": "king",
+          "column": 5,
+          "row": 9
+        },
+        {
+          "side": "black",
+          "kind": "cannon",
+          "column": 8,
+          "row": 9
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "requests": 18,
+    "http_successful": 18,
+    "complete_results": 17,
+    "import_valid": 14,
+    "exact_positions": 1,
+    "complete_response_orientation_correct": 17
+  },
+  "by_setting": [
+    {
+      "model": "DeepSeek",
+      "thinking": "off",
+      "requests": 2,
+      "complete_results": 2,
+      "import_valid": 2,
+      "exact_positions": 0,
+      "correct_piece_observations": 17,
+      "expected_piece_observations": 30,
+      "average_seconds": 2.06,
+      "total_output_tokens_reported": 535,
+      "reasoning_tokens_reported": 0
+    },
+    {
+      "model": "DeepSeek",
+      "thinking": "low",
+      "requests": 2,
+      "complete_results": 2,
+      "import_valid": 2,
+      "exact_positions": 0,
+      "correct_piece_observations": 14,
+      "expected_piece_observations": 30,
+      "average_seconds": 59.0,
+      "total_output_tokens_reported": 25140,
+      "reasoning_tokens_reported": 24603
+    },
+    {
+      "model": "DeepSeek",
+      "thinking": "high",
+      "requests": 2,
+      "complete_results": 1,
+      "import_valid": 1,
+      "exact_positions": 1,
+      "correct_piece_observations": 16,
+      "expected_piece_observations": 30,
+      "average_seconds": 93.93,
+      "total_output_tokens_reported": 40405,
+      "reasoning_tokens_reported": 40119
+    },
+    {
+      "model": "DeepSeek",
+      "thinking": "max",
+      "requests": 2,
+      "complete_results": 2,
+      "import_valid": 2,
+      "exact_positions": 0,
+      "correct_piece_observations": 23,
+      "expected_piece_observations": 30,
+      "average_seconds": 150.34,
+      "total_output_tokens_reported": 69564,
+      "reasoning_tokens_reported": 68963
+    },
+    {
+      "model": "Luna",
+      "thinking": "default",
+      "requests": 2,
+      "complete_results": 2,
+      "import_valid": 1,
+      "exact_positions": 0,
+      "correct_piece_observations": 21,
+      "expected_piece_observations": 30,
+      "average_seconds": 19.82,
+      "total_output_tokens_reported": 1259,
+      "reasoning_tokens_reported": null
+    },
+    {
+      "model": "Luna",
+      "thinking": "off",
+      "requests": 2,
+      "complete_results": 2,
+      "import_valid": 1,
+      "exact_positions": 0,
+      "correct_piece_observations": 14,
+      "expected_piece_observations": 30,
+      "average_seconds": 12.89,
+      "total_output_tokens_reported": 588,
+      "reasoning_tokens_reported": null
+    },
+    {
+      "model": "Luna",
+      "thinking": "low",
+      "requests": 2,
+      "complete_results": 2,
+      "import_valid": 2,
+      "exact_positions": 0,
+      "correct_piece_observations": 27,
+      "expected_piece_observations": 30,
+      "average_seconds": 15.14,
+      "total_output_tokens_reported": 1440,
+      "reasoning_tokens_reported": null
+    },
+    {
+      "model": "Luna",
+      "thinking": "high",
+      "requests": 2,
+      "complete_results": 2,
+      "import_valid": 1,
+      "exact_positions": 0,
+      "correct_piece_observations": 24,
+      "expected_piece_observations": 30,
+      "average_seconds": 34.7,
+      "total_output_tokens_reported": 2943,
+      "reasoning_tokens_reported": null
+    },
+    {
+      "model": "Luna",
+      "thinking": "max",
+      "requests": 2,
+      "complete_results": 2,
+      "import_valid": 2,
+      "exact_positions": 0,
+      "correct_piece_observations": 26,
+      "expected_piece_observations": 30,
+      "average_seconds": 31.88,
+      "total_output_tokens_reported": 2837,
+      "reasoning_tokens_reported": null
+    }
+  ],
+  "results": [
+    {
+      "test": "jj-level-32-off",
+      "api": "chatCompletions",
+      "thinking": "off",
+      "model_requested": "deepseek-v4-flash",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": "deepseek-flash",
+      "usage": {
+        "prompt_tokens": 1674,
+        "completion_tokens": 250,
+        "total_tokens": 1924,
+        "prompt_tokens_details": {
+          "cached_tokens": 512
+        },
+        "prompt_cache_hit_tokens": 512,
+        "prompt_cache_miss_tokens": 1162
+      },
+      "finish_reason": "stop",
+      "has_final_text": true,
+      "elapsed_seconds": 1.99,
+      "bottom_side": "red",
+      "correct": 8,
+      "exact_position": false,
+      "expected": 14,
+      "extra": [
+        "black:pawn:d2",
+        "black:pawn:e3",
+        "black:pawn:f2",
+        "black:rook:a2",
+        "red:king:e1",
+        "red:pawn:g8"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:pawn:d1",
+        "black:pawn:e2",
+        "black:pawn:f1",
+        "black:rook:a1",
+        "red:king:e0",
+        "red:pawn:f8"
+      ],
+      "orientation_correct": true,
+      "recognized": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 120.0,
+      "model_family": "DeepSeek",
+      "final_text_received": true,
+      "parameters": {
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0,
+        "max_tokens": 4096
+      }
+    },
+    {
+      "test": "jj-level-32-low",
+      "api": "chatCompletions",
+      "thinking": "low",
+      "model_requested": "deepseek-v4-flash",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": "deepseek-flash",
+      "usage": {
+        "prompt_tokens": 1699,
+        "completion_tokens": 13998,
+        "total_tokens": 15697,
+        "prompt_tokens_details": {
+          "cached_tokens": 512
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 13747
+        },
+        "prompt_cache_hit_tokens": 512,
+        "prompt_cache_miss_tokens": 1187
+      },
+      "finish_reason": "stop",
+      "has_final_text": true,
+      "elapsed_seconds": 64.69,
+      "bottom_side": "red",
+      "correct": 9,
+      "exact_position": false,
+      "expected": 14,
+      "extra": [
+        "black:pawn:d2",
+        "black:pawn:e3",
+        "black:pawn:f2",
+        "black:rook:a2",
+        "red:king:e1"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:pawn:d1",
+        "black:pawn:e2",
+        "black:pawn:f1",
+        "black:rook:a1",
+        "red:king:e0"
+      ],
+      "orientation_correct": true,
+      "recognized": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "DeepSeek",
+      "final_text_received": true,
+      "parameters": {
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoning_effort": "low",
+        "max_tokens": 32768
+      }
+    },
+    {
+      "test": "jj-level-32-high",
+      "api": "chatCompletions",
+      "thinking": "high",
+      "model_requested": "deepseek-v4-flash",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": "deepseek-flash",
+      "usage": {
+        "prompt_tokens": 1699,
+        "completion_tokens": 32768,
+        "total_tokens": 34467,
+        "prompt_tokens_details": {
+          "cached_tokens": 512
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 32768
+        },
+        "prompt_cache_hit_tokens": 512,
+        "prompt_cache_miss_tokens": 1187
+      },
+      "finish_reason": "length",
+      "error": "Output budget exhausted before final JSON",
+      "error_message": "Incomplete completion",
+      "elapsed_seconds": 157.42,
+      "expected": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "DeepSeek",
+      "final_text_received": false,
+      "import_success": false,
+      "import_valid": false,
+      "parameters": {
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoning_effort": "high",
+        "max_tokens": 32768
+      }
+    },
+    {
+      "test": "jj-level-32-max",
+      "api": "chatCompletions",
+      "thinking": "max",
+      "model_requested": "deepseek-v4-flash",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": "deepseek-flash",
+      "usage": {
+        "prompt_tokens": 1699,
+        "completion_tokens": 44080,
+        "total_tokens": 45779,
+        "prompt_tokens_details": {
+          "cached_tokens": 512
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 43829
+        },
+        "prompt_cache_hit_tokens": 512,
+        "prompt_cache_miss_tokens": 1187
+      },
+      "finish_reason": "stop",
+      "has_final_text": true,
+      "elapsed_seconds": 199.91,
+      "bottom_side": "red",
+      "correct": 13,
+      "exact_position": false,
+      "expected": 14,
+      "extra": [
+        "black:cannon:a6"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "red:cannon:a6"
+      ],
+      "orientation_correct": true,
+      "recognized": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 360.0,
+      "model_family": "DeepSeek",
+      "final_text_received": true,
+      "parameters": {
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoning_effort": "max",
+        "max_tokens": 65536
+      }
+    },
+    {
+      "test": "jj-level-31-off",
+      "api": "chatCompletions",
+      "thinking": "off",
+      "model_requested": "deepseek-v4-flash",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": "deepseek-flash",
+      "usage": {
+        "prompt_tokens": 1674,
+        "completion_tokens": 285,
+        "total_tokens": 1959,
+        "prompt_tokens_details": {
+          "cached_tokens": 1536
+        },
+        "prompt_cache_hit_tokens": 1536,
+        "prompt_cache_miss_tokens": 138
+      },
+      "finish_reason": "stop",
+      "has_final_text": true,
+      "elapsed_seconds": 2.12,
+      "bottom_side": "red",
+      "correct": 9,
+      "exact_position": false,
+      "expected": 16,
+      "extra": [
+        "black:cannon:i2",
+        "black:pawn:d3",
+        "black:rook:e3",
+        "black:rook:i9",
+        "red:cannon:c5",
+        "red:king:f2",
+        "red:pawn:e4"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:cannon:i0",
+        "black:pawn:d1",
+        "black:rook:e1",
+        "black:rook:h9",
+        "red:cannon:c4",
+        "red:king:f0",
+        "red:pawn:e3"
+      ],
+      "orientation_correct": true,
+      "recognized": 16,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 120.0,
+      "model_family": "DeepSeek",
+      "final_text_received": true,
+      "parameters": {
+        "thinking": {
+          "type": "disabled"
+        },
+        "temperature": 0,
+        "max_tokens": 4096
+      }
+    },
+    {
+      "test": "jj-level-31-low",
+      "api": "chatCompletions",
+      "thinking": "low",
+      "model_requested": "deepseek-v4-flash",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": "deepseek-flash",
+      "usage": {
+        "prompt_tokens": 1699,
+        "completion_tokens": 11142,
+        "total_tokens": 12841,
+        "prompt_tokens_details": {
+          "cached_tokens": 1536
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 10856
+        },
+        "prompt_cache_hit_tokens": 1536,
+        "prompt_cache_miss_tokens": 163
+      },
+      "finish_reason": "stop",
+      "has_final_text": true,
+      "elapsed_seconds": 53.31,
+      "bottom_side": "red",
+      "correct": 5,
+      "exact_position": false,
+      "expected": 16,
+      "extra": [
+        "black:advisor:c9",
+        "black:cannon:i1",
+        "black:elephant:b9",
+        "black:king:d9",
+        "black:pawn:d3",
+        "black:rook:e3",
+        "black:rook:g9",
+        "red:cannon:c5",
+        "red:king:f1",
+        "red:pawn:e4",
+        "red:rook:i9"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:advisor:d9",
+        "black:cannon:i0",
+        "black:elephant:c9",
+        "black:king:e9",
+        "black:pawn:d1",
+        "black:rook:e1",
+        "black:rook:h9",
+        "red:cannon:c4",
+        "red:king:f0",
+        "red:pawn:e3",
+        "red:rook:i8"
+      ],
+      "orientation_correct": true,
+      "recognized": 16,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "DeepSeek",
+      "final_text_received": true,
+      "parameters": {
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoning_effort": "low",
+        "max_tokens": 32768
+      }
+    },
+    {
+      "test": "jj-level-31-high",
+      "api": "chatCompletions",
+      "thinking": "high",
+      "model_requested": "deepseek-v4-flash",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": "deepseek-flash",
+      "usage": {
+        "prompt_tokens": 1699,
+        "completion_tokens": 7637,
+        "total_tokens": 9336,
+        "prompt_tokens_details": {
+          "cached_tokens": 512
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 7351
+        },
+        "prompt_cache_hit_tokens": 512,
+        "prompt_cache_miss_tokens": 1187
+      },
+      "finish_reason": "stop",
+      "has_final_text": true,
+      "elapsed_seconds": 30.44,
+      "bottom_side": "red",
+      "correct": 16,
+      "exact_position": true,
+      "expected": 16,
+      "extra": [],
+      "import_success": true,
+      "import_valid": true,
+      "missing": [],
+      "orientation_correct": true,
+      "recognized": 16,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "DeepSeek",
+      "final_text_received": true,
+      "parameters": {
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoning_effort": "high",
+        "max_tokens": 32768
+      }
+    },
+    {
+      "test": "jj-level-31-max",
+      "api": "chatCompletions",
+      "thinking": "max",
+      "model_requested": "deepseek-v4-flash",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": "deepseek-flash",
+      "usage": {
+        "prompt_tokens": 1699,
+        "completion_tokens": 25484,
+        "total_tokens": 27183,
+        "prompt_tokens_details": {
+          "cached_tokens": 512
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 25134
+        },
+        "prompt_cache_hit_tokens": 512,
+        "prompt_cache_miss_tokens": 1187
+      },
+      "finish_reason": "stop",
+      "has_final_text": true,
+      "elapsed_seconds": 100.78,
+      "bottom_side": "red",
+      "correct": 10,
+      "exact_position": false,
+      "expected": 16,
+      "extra": [
+        "black:cannon:i1",
+        "black:pawn:d2",
+        "black:rook:e2",
+        "red:cannon:c5",
+        "red:king:f1",
+        "red:pawn:e4"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:cannon:i0",
+        "black:pawn:d1",
+        "black:rook:e1",
+        "red:cannon:c4",
+        "red:king:f0",
+        "red:pawn:e3"
+      ],
+      "orientation_correct": true,
+      "recognized": 16,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 360.0,
+      "model_family": "DeepSeek",
+      "final_text_received": true,
+      "parameters": {
+        "thinking": {
+          "type": "enabled"
+        },
+        "reasoning_effort": "max",
+        "max_tokens": 65536
+      }
+    },
+    {
+      "test": "jj-level-32-default",
+      "api": "responses",
+      "thinking": "default",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 697,
+        "total_tokens": 3735
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 28.79,
+      "bottom_side": "red",
+      "correct": 8,
+      "exact_position": false,
+      "expected": 14,
+      "extra": [
+        "black:cannon:a6",
+        "black:horse:a5",
+        "black:rook:a2",
+        "black:rook:e4",
+        "red:advisor:c3",
+        "red:advisor:d8"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:rook:a1",
+        "black:rook:e5",
+        "red:cannon:a6",
+        "red:horse:a5",
+        "red:rook:c4",
+        "red:rook:d8"
+      ],
+      "orientation_correct": true,
+      "recognized": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {}
+    },
+    {
+      "test": "jj-level-31-default",
+      "api": "responses",
+      "thinking": "default",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 562,
+        "total_tokens": 3600
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 10.85,
+      "bottom_side": "red",
+      "correct": 13,
+      "error": "识别出的黑方士数量过多，请重试。",
+      "exact_position": false,
+      "expected": 16,
+      "extra": [
+        "black:advisor:d1",
+        "red:cannon:i0"
+      ],
+      "import_success": false,
+      "import_valid": false,
+      "missing": [
+        "black:cannon:i0",
+        "black:pawn:d1",
+        "red:rook:i8"
+      ],
+      "orientation_correct": true,
+      "recognized": 15,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {}
+    },
+    {
+      "test": "jj-level-32-off",
+      "api": "responses",
+      "thinking": "off",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 278,
+        "total_tokens": 3316
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 14.68,
+      "bottom_side": "red",
+      "correct": 6,
+      "exact_position": false,
+      "expected": 14,
+      "extra": [
+        "black:cannon:a6",
+        "black:horse:a5",
+        "black:pawn:d2",
+        "black:pawn:e3",
+        "black:pawn:f2",
+        "black:rook:a2",
+        "red:advisor:c4",
+        "red:advisor:d8"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:pawn:d1",
+        "black:pawn:e2",
+        "black:pawn:f1",
+        "black:rook:a1",
+        "red:cannon:a6",
+        "red:horse:a5",
+        "red:rook:c4",
+        "red:rook:d8"
+      ],
+      "orientation_correct": true,
+      "recognized": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 120.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {
+        "reasoning": {
+          "effort": "none"
+        },
+        "max_output_tokens": 4096
+      }
+    },
+    {
+      "test": "jj-level-31-off",
+      "api": "responses",
+      "thinking": "off",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 310,
+        "total_tokens": 3348
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 11.11,
+      "bottom_side": "red",
+      "correct": 8,
+      "error": "识别结果中有棋子位置重叠，请重试。",
+      "exact_position": false,
+      "expected": 16,
+      "extra": [
+        "black:horse:c6",
+        "black:pawn:f8",
+        "black:rook:c7",
+        "red:cannon:i1",
+        "red:horse:d2",
+        "red:king:f1",
+        "red:pawn:e4",
+        "red:rook:e2"
+      ],
+      "import_success": false,
+      "import_valid": false,
+      "missing": [
+        "black:cannon:i0",
+        "black:pawn:d1",
+        "black:rook:e1",
+        "red:horse:c6",
+        "red:king:f0",
+        "red:pawn:e3",
+        "red:rook:c7",
+        "red:rook:i8"
+      ],
+      "orientation_correct": true,
+      "recognized": 16,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 120.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {
+        "reasoning": {
+          "effort": "none"
+        },
+        "max_output_tokens": 4096
+      }
+    },
+    {
+      "test": "jj-level-32-low",
+      "api": "responses",
+      "thinking": "low",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 750,
+        "total_tokens": 3788
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 15.28,
+      "bottom_side": "red",
+      "correct": 13,
+      "exact_position": false,
+      "expected": 14,
+      "extra": [
+        "red:advisor:c4"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "red:rook:c4"
+      ],
+      "orientation_correct": true,
+      "recognized": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {
+        "reasoning": {
+          "effort": "low"
+        },
+        "max_output_tokens": 32768
+      }
+    },
+    {
+      "test": "jj-level-31-low",
+      "api": "responses",
+      "thinking": "low",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 690,
+        "total_tokens": 3728
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 15.0,
+      "bottom_side": "red",
+      "correct": 14,
+      "exact_position": false,
+      "expected": 16,
+      "extra": [
+        "black:horse:d1",
+        "red:cannon:i0"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:cannon:i0",
+        "black:pawn:d1"
+      ],
+      "orientation_correct": true,
+      "recognized": 16,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {
+        "reasoning": {
+          "effort": "low"
+        },
+        "max_output_tokens": 32768
+      }
+    },
+    {
+      "test": "jj-level-32-high",
+      "api": "responses",
+      "thinking": "high",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 1790,
+        "total_tokens": 4828
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 38.9,
+      "bottom_side": "red",
+      "correct": 10,
+      "exact_position": false,
+      "expected": 14,
+      "extra": [
+        "black:cannon:a6",
+        "black:horse:a5",
+        "red:advisor:c4",
+        "red:advisor:d8"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "red:cannon:a6",
+        "red:horse:a5",
+        "red:rook:c4",
+        "red:rook:d8"
+      ],
+      "orientation_correct": true,
+      "recognized": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {
+        "reasoning": {
+          "effort": "high"
+        },
+        "max_output_tokens": 32768
+      }
+    },
+    {
+      "test": "jj-level-31-high",
+      "api": "responses",
+      "thinking": "high",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 1153,
+        "total_tokens": 4191
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 30.5,
+      "bottom_side": "red",
+      "correct": 14,
+      "error": "识别出的黑方士数量过多，请重试。",
+      "exact_position": false,
+      "expected": 16,
+      "extra": [
+        "black:advisor:d1",
+        "red:cannon:i0"
+      ],
+      "import_success": false,
+      "import_valid": false,
+      "missing": [
+        "black:cannon:i0",
+        "black:pawn:d1"
+      ],
+      "orientation_correct": true,
+      "recognized": 16,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 240.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {
+        "reasoning": {
+          "effort": "high"
+        },
+        "max_output_tokens": 32768
+      }
+    },
+    {
+      "test": "jj-level-32-max",
+      "api": "responses",
+      "thinking": "max",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 1510,
+        "total_tokens": 4548
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 19.97,
+      "bottom_side": "red",
+      "correct": 12,
+      "exact_position": false,
+      "expected": 14,
+      "extra": [
+        "black:horse:a5",
+        "red:advisor:c4"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "red:horse:a5",
+        "red:rook:c4"
+      ],
+      "orientation_correct": true,
+      "recognized": 14,
+      "fixture": "jj-level-32",
+      "expected_fen": "4k4/2PR1P3/3n5/C8/N3r4/2R6/9/4p4/r2p1p3/4K4 w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 360.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {
+        "reasoning": {
+          "effort": "xhigh"
+        },
+        "max_output_tokens": 65536
+      }
+    },
+    {
+      "test": "jj-level-31-max",
+      "api": "responses",
+      "thinking": "max",
+      "model_requested": "cx/gpt-5.6-luna",
+      "http_status": 200,
+      "content_type": "application/json",
+      "model_returned": null,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 1327,
+        "total_tokens": 4365
+      },
+      "response_status": "completed",
+      "has_final_text": true,
+      "elapsed_seconds": 43.79,
+      "bottom_side": "red",
+      "correct": 14,
+      "exact_position": false,
+      "expected": 16,
+      "extra": [
+        "black:cannon:c4",
+        "red:cannon:i0"
+      ],
+      "import_success": false,
+      "import_valid": true,
+      "missing": [
+        "black:cannon:i0",
+        "red:cannon:c4"
+      ],
+      "orientation_correct": true,
+      "recognized": 16,
+      "fixture": "jj-level-31",
+      "expected_fen": "2bak2r1/4aP2R/2R1b4/2N6/9/2C6/4P4/9/3pr4/5K2c w - - 0 1",
+      "expected_bottom_side": "red",
+      "timeout_seconds": 360.0,
+      "model_family": "Luna",
+      "final_text_received": true,
+      "parameters": {
+        "reasoning": {
+          "effort": "xhigh"
+        },
+        "max_output_tokens": 65536
+      }
+    }
+  ],
+  "limitations": "Two images and one run per cell; this is an observed comparison, not a general accuracy estimate. App-level thinking names do not guarantee the proxy honors every effort setting. Provider token accounting may differ. Image titles and side-to-move are not scored. No recognition prompt or production behavior changed during the comparison.",
+  "production_recognition_source_commit": "d2fe7982a8bd4e45a13e33f749ab61849bdff675",
+  "audit_harness_changes": "This report commit adds supplied-image request generation and separate app-validation diagnostics; production recognition, image processing and prompt are unchanged."
+}

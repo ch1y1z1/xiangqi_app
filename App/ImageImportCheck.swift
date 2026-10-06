@@ -207,7 +207,7 @@ enum ImageImportCheck {
         return URL(fileURLWithPath: auditArgument("--audit-output") ?? "build/recognition-audit", relativeTo: root).standardizedFileURL
     }
 
-    /// Writes public image/request fixtures only. No keychain access or network requests.
+    /// Prepares local image/request fixtures only. No keychain access or network requests.
     @MainActor static func prepareAudit() -> Never {
         do {
             let folder = auditFolder
@@ -231,6 +231,35 @@ enum ImageImportCheck {
                 }
                 try settings.validate(key: "")
                 custom = settings
+            }
+            if let input = auditArgument("--audit-input") {
+                let fixtures = try JSONDecoder().decode([[String: String]].self,
+                    from: Data(contentsOf: URL(fileURLWithPath: input)))
+                var manifest: [[String: String]] = []
+                for fixture in fixtures {
+                    guard let name = fixture["test"], let path = fixture["image"],
+                          let fen = fixture["expected_fen"], let bottom = fixture["expected_bottom_side"] else {
+                        throw ImageImportError(message: "图片审计样例需包含名称、图片路径、预期 FEN 和朝向。")
+                    }
+                    let image = try RecognitionImage(data: Data(contentsOf: URL(fileURLWithPath: path)))
+                    let levels: [RecognitionThinking?] = custom != nil ? [custom!.customThinking] : RecognitionThinking.allCases.map { Optional($0) }
+                    for level in levels {
+                        let thinking = level?.rawValue ?? "default"
+                        let test = name + "-" + thinking
+                        let request: URLRequest
+                        if let custom { request = try ImageRecognizer.request(jpeg: image.jpeg, key: "", settings: custom) }
+                        else { request = try DeepSeekRecognizer.request(jpeg: image.jpeg, key: "audit-dummy", thinking: level!) }
+                        try request.httpBody!.write(to: folder.appendingPathComponent(test + "-request.json"))
+                        manifest.append(["test": test, "thinking": thinking, "expected_fen": fen,
+                                         "expected_bottom_side": bottom, "timeout": String(request.timeoutInterval),
+                                         "endpoint": request.url!.absoluteString, "api": custom?.api.rawValue ?? "chatCompletions",
+                                         "model": custom?.model ?? DeepSeekRecognizer.model])
+                    }
+                }
+                try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
+                    .write(to: folder.appendingPathComponent("manifest.json"))
+                print("Prepared \(manifest.count) supplied-image requests; no credentials stored.")
+                exit(0)
             }
             var black = Study.examples[1]
             black.bottomSide = .black
@@ -284,14 +313,24 @@ enum ImageImportCheck {
                 var entry: [String: Any] = ["test": name, "expected": expected.count]
                 do {
                     let content = try String(contentsOf: folder.appendingPathComponent(name + "-content.json"), encoding: .utf8)
-                    let result = try RecognizedSetup.parse(content)
+                    let result: RecognizedSetup
+                    do {
+                        result = try RecognizedSetup.parse(content)
+                        entry["import_valid"] = true
+                    } catch {
+                        // Preserve piece metrics when a response decodes but violates import limits.
+                        entry["import_valid"] = false
+                        entry["error"] = error.localizedDescription
+                        result = try JSONDecoder().decode(RecognizedSetup.self, from: Data(content.utf8))
+                    }
                     let actual = identities(result.chessPieces)
                     entry["recognized"] = actual.count
                     entry["correct"] = expected.intersection(actual).count
                     entry["missing"] = expected.subtracting(actual).sorted()
                     entry["extra"] = actual.subtracting(expected).sorted()
                     entry["bottom_side"] = result.bottomSide.rawValue
-                    entry["exact_position"] = expected == actual
+                    entry["exact_position"] = expected == actual && result.pieces.count == expected.count
+                    entry["import_success"] = entry["import_valid"] as? Bool == true && expected == actual && result.pieces.count == expected.count
                     if let bottom = fixture["expected_bottom_side"] {
                         entry["orientation_correct"] = result.bottomSide.rawValue == bottom
                     }

@@ -55,6 +55,8 @@ build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --rend
 
 Mac Debug 的 `--prepare-recognition-audit` 可配合 `--audit-endpoint`、`--audit-model`、`--audit-api` 生成自定义服务的真实请求样例；`--audit-output` 指定输出目录，`--audit-thinking` 指定可选思考档位。准备步骤不连接服务，真实调用只在手动运行 `scripts/audit-custom-recognition.py` 并输入密钥时发生。`--audit-recognition-responses --audit-output …` 使用实际 Swift 解析器核对指定目录的响应。
 
+`--audit-input` 支持提供本地图片样例及预先标定的 FEN，字段见 [图片识别说明](image-import.md)。真实 JJ 截图的 DeepSeek／Luna 全档测试结果见 [对照表格](jj-recognition-comparison.md)。审计会分别记录导入校验是否通过、正确棋子数及整盘是否完全匹配，避免把结构无效的部分正确结果当作可直接使用的棋局。
+
 `--check` 也适用于 iOS Debug 版本；`--render-preview` 仅适用于 Mac Debug。可以选择并启动一个 iPhone 模拟器后，通过 Xcode 运行，或使用命令行安装与检查：
 
 ```sh

@@ -113,3 +113,13 @@ build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --audi
 ```
 
 省略 `--audit-thinking` 使用服务默认，也可指定 `off/low/high/max`。准备步骤只生成截图和无密钥请求体；Python 脚本通过隐藏输入读取密钥，两路并发，只向命令指定来源发请求，不跟随重定向、不自动重试；请求前删除该样例的旧响应，避免旧结果误计为本次成功。密钥不写入 App 配置或钥匙串，生成文件仅保存在忽略的 `build/`。
+
+### 用户提供的 JJ 象棋实图与全部思考档位
+
+2026-10-06 使用用户提供的第 32 关（14 子）和第 31 关（16 子）完整截图，分别测试 DeepSeek 关闭／低／高／最高四档，以及 Luna 服务默认／关闭／低／高／最高五档，共 18 次真实请求。所有请求使用相同 prompt 和同一图片对应的相同 JPEG，没有裁剪或添加网格。人工棋子基准在请求前标定。
+
+本轮唯一整盘完全匹配的是 DeepSeek 高档的第 31 关；第 32 关所有设置均有错误或无最终输出。Luna 低档的棋子匹配最好，为 27/30，但两张图仍需校正。DeepSeek 高档第 32 关耗尽 32768 tokens 而未返回最终 JSON；Luna 第 31 关的部分结果因重复位置或黑士数量超限被 App 拒绝导入。提高强度未稳定提升结果，先前生成截图的 100% 不能外推到真实 JJ 截图。
+
+完整耗时、正确棋子数、整盘成功和 tokens 对照见 [JJ 实图测试表格](jj-recognition-comparison.md)，人工基准、请求参数与逐枚差异见 [原始验证记录](jj-recognition-validation.json)。每张图在每档只测一次，尚不能估计普遍成功率。原图与密钥不提交仓库。
+
+可用 `--audit-input` 指定本地 JSON 样例列表，每项包含 `test`、`image`、`expected_fen`、`expected_bottom_side`。不指定自定义服务参数时，生成所给图片的 DeepSeek 全四档请求；自定义服务继续用 `--audit-thinking` 指定当前档。Swift 审计区分结构校验是否通过与棋子匹配情况，对可解码但校验失败的结果保留诊断计数。
