@@ -51,7 +51,9 @@ build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --rend
 
 `--check` 检查合法走子、多分支复用、JSON 保存恢复、改名保留分支、重新摆棋的历史副本与 AI 暂停、草稿校验、少量安全吃子样例、包内模型推荐与取消。它只使用临时残局目录，不改动用户棋库。`--render-preview` 将实际 SwiftUI 页面渲染到离屏视图，输出到 `build/previews/`；它不截取桌面，不模拟用户输入。
 
-`--check-image-import` 只验证图片导入：坐标换算、照片旋转与结构校验，DeepSeek 四档思考兼容，自定义地址解析、可选鉴权、Completions／Responses 图片与 JSON 请求格式、标准思考参数、模拟 HTTP 导入与不完整响应拒绝。使用虚拟密钥并拦截 HTTP，不读取个人密钥，不请求外网，不消耗额度；图片功能变更不需要重跑引擎探针。少量真实 DeepSeek API 测试和手动复现方法见 [图片识别说明](image-import.md)。
+`--check-image-import` 只验证图片导入：坐标换算、照片旋转与结构校验，DeepSeek 四档思考兼容，自定义地址解析、可选鉴权、Completions／Responses 图片与 JSON 请求格式、标准思考参数、模拟 HTTP 导入与不完整响应拒绝。使用虚拟密钥并拦截 HTTP，不读取个人密钥，不请求外网，不消耗额度；图片功能变更不需要重跑引擎探针。真实 DeepSeek／GPT Luna 测试和手动复现方法见 [图片识别说明](image-import.md)。
+
+Mac Debug 的 `--prepare-recognition-audit` 可配合 `--audit-endpoint`、`--audit-model`、`--audit-api` 生成自定义服务的真实请求样例；`--audit-output` 指定输出目录，`--audit-thinking` 指定可选思考档位。准备步骤不连接服务，真实调用只在手动运行 `scripts/audit-custom-recognition.py` 并输入密钥时发生。`--audit-recognition-responses --audit-output …` 使用实际 Swift 解析器核对指定目录的响应。
 
 `--check` 也适用于 iOS Debug 版本；`--render-preview` 仅适用于 Mac Debug。可以选择并启动一个 iPhone 模拟器后，通过 Xcode 运行，或使用命令行安装与检查：
 

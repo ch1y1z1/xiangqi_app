@@ -71,7 +71,7 @@
 
 ## 开发验证
 
-构建 Mac Debug 后执行 `Xiangqi --check-image-import`，验证坐标、照片旋转与结构解析、DeepSeek 四档请求、自定义地址与可选鉴权、两种接口的请求和模拟响应、标准思考参数及截断拒绝，不使用真实密钥或调用服务。自定义服务尚未使用用户真实地址与凭证验证。
+构建 Mac Debug 后执行 `Xiangqi --check-image-import`，验证坐标、照片旋转与结构解析、DeepSeek 四档请求、自定义地址与可选鉴权、两种接口的请求和模拟响应、标准思考参数及截断拒绝，不使用真实密钥或调用服务。
 
 2026-10-06 已用授权测试密钥请求真实官方 API，逐枚比较颜色、类型和位置。原提示下，红方 5 子残局关闭／高均为 4/5；黑方在下关闭时图片朝向误标，换算后为 0/5，高为 5/5；初始盘高为 32/32。补强行号与朝向提示后，高模式仍为红方 4/5、黑方 5/5、初始盘 32/32。红方样例最高模式耗时约 79 秒，车的位置恢复，但马偏一列，仍为 4/5。结果说明本地坐标公式一致，模型返回的朝向和行列仍会出错；更高强度不能保证修复。记录见 [识别自查与真实 API 结果](image-import-validation.json)，这些少量生成截图不能作为任意棋盘图片的准确率。
 
@@ -84,3 +84,32 @@ build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --audi
 ```
 
 Python 脚本通过隐藏输入读取密钥，仅使用官方 HTTPS 地址，不保存密钥或请求头，不记录模型思考过程；真实请求只在手动运行时发生，并产生 API 费用。可用 `off`、`high`、`max` 筛选已有样例，省略参数运行全部六个请求。部分运行时结果目录可能保留之前响应，应按本次 `wire-results.json` 的条目判断哪些结果刚刚重跑。
+
+### GPT Luna 自定义服务实测
+
+2026-10-06 从用户授权的自定义端点读取到 18 个模型条目，其中 Luna 为 `cx/gpt-5.6-luna` 与同版本 `cx/gpt-5.6-luna-review`。列表没有创建时间，按可用 Luna 的最高版本号选择普通路由 `cx/gpt-5.6-luna`；不把 review 路由当作更新版本。
+
+使用当前 App 的图片处理、prompt、请求生成器及服务默认思考设置；Python 发送真实 HTTP 请求，返回的最终文本交给 Swift 的实际解析器与坐标换算，逐枚对比已知 FEN。4 张实际 SwiftUI 编辑器截图各在两种接口下请求一次，结果如下：
+
+| 截图 | Chat Completions 正确棋子／耗时 | Responses 正确棋子／耗时 |
+| --- | --- | --- |
+| 红方在下，5 子残局 | 5/5 · 13.04 秒 | 5/5 · 10.63 秒 |
+| 黑方在下，5 子残局 | 5/5 · 10.35 秒 | 5/5 · 12.08 秒 |
+| 红方在下，32 子初始盘 | 32/32 · 28.55 秒 | 32/32 · 40.98 秒 |
+| 黑方在下，32 子初始盘 | 32/32 · 25.07 秒 | 32/32 · 7.29 秒 |
+
+HTTP 成功 8/8、整盘完全匹配 8/8、朝向正确 8/8；148 次棋子核对均正确，没有漏子或多子。两种接口平均耗时分别为 19.25 秒与 17.75 秒，全部请求平均 18.50 秒。此前 DeepSeek 红方 5 子样例的车位偏一行，本轮两种接口均正确识别为 a1。
+
+这里的 100% 仅表示 4 张生成截图的观测结果，包含同一图片在两种接口下的重复测试；样本仅有两种不同局面，不能推断拍照、模糊图片或其他象棋 App 截图的普遍成功率。未测试 review 路由或手动思考档位。Chat Completions 返回模型名 `gpt-5.6-luna`；Responses 的返回体未标明模型名。详细计数与每次请求记录见 [自定义服务验证结果](custom-recognition-validation.json)。
+
+开发者可复现自定义服务测试；以下地址为占位示例，换成已授权的服务地址：
+
+```sh
+build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --prepare-recognition-audit --audit-endpoint https://example.com/v1 --audit-model cx/gpt-5.6-luna --audit-api responses --audit-output build/custom-audit/responses
+build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --prepare-recognition-audit --audit-endpoint https://example.com/v1 --audit-model cx/gpt-5.6-luna --audit-api chatCompletions --audit-output build/custom-audit/completions
+python3 scripts/audit-custom-recognition.py https://example.com/v1 build/custom-audit/responses build/custom-audit/completions
+build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --audit-recognition-responses --audit-output build/custom-audit/responses
+build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --audit-recognition-responses --audit-output build/custom-audit/completions
+```
+
+省略 `--audit-thinking` 使用服务默认，也可指定 `off/low/high/max`。准备步骤只生成截图和无密钥请求体；Python 脚本通过隐藏输入读取密钥，两路并发，只向命令指定来源发请求，不跟随重定向、不自动重试；请求前删除该样例的旧响应，避免旧结果误计为本次成功。密钥不写入 App 配置或钥匙串，生成文件仅保存在忽略的 `build/`。

@@ -197,19 +197,65 @@ enum ImageImportCheck {
     }
 
     #if os(macOS)
+    private static func auditArgument(_ flag: String) -> String? {
+        let arguments = CommandLine.arguments
+        guard let index = arguments.firstIndex(of: flag), arguments.indices.contains(index + 1) else { return nil }
+        return arguments[index + 1]
+    }
+    private static var auditFolder: URL {
+        let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+        return URL(fileURLWithPath: auditArgument("--audit-output") ?? "build/recognition-audit", relativeTo: root).standardizedFileURL
+    }
+
     /// Writes public image/request fixtures only. No keychain access or network requests.
     @MainActor static func prepareAudit() -> Never {
         do {
-            let folder = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("build/recognition-audit")
+            let folder = auditFolder
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            var custom: RecognitionSettings?
+            if auditArgument("--audit-endpoint") != nil || auditArgument("--audit-model") != nil {
+                guard let endpoint = auditArgument("--audit-endpoint"), let model = auditArgument("--audit-model"),
+                      let api = RecognitionAPI(rawValue: auditArgument("--audit-api") ?? "responses") else {
+                    throw ImageImportError(message: "自定义审计需同时提供端点和模型，接口类型为 responses 或 chatCompletions。")
+                }
+                var settings = RecognitionSettings()
+                settings.provider = .custom
+                settings.address = endpoint
+                settings.model = model
+                settings.api = api
+                if let level = auditArgument("--audit-thinking"), level != "default" {
+                    guard let thinking = RecognitionThinking(rawValue: level) else {
+                        throw ImageImportError(message: "审计思考强度应为 default、off、low、high 或 max。")
+                    }
+                    settings.customThinking = thinking
+                }
+                try settings.validate(key: "")
+                custom = settings
+            }
             var black = Study.examples[1]
             black.bottomSide = .black
-            let fixtures: [(String, Study)] = [("editor-red-5", Study.examples[1]), ("editor-black-5", black),
+            var fixtures: [(String, Study)] = [("editor-red-5", Study.examples[1]), ("editor-black-5", black),
                                                ("editor-red-32", Study(name: "初始盘", pieces: ChessPosition.pieces(fen: ChessPosition.initialFEN)))]
+            if custom != nil {
+                var initial = fixtures[2].1
+                initial.bottomSide = .black
+                fixtures.append(("editor-black-32", initial))
+            }
             var manifest: [[String: String]] = []
             for (name, study) in fixtures {
                 try DevelopmentCheck.renderScreen(EditorView(study: study, onSave: { _, _ in }), name: name, folder: folder)
                 let image = try RecognitionImage(data: Data(contentsOf: folder.appendingPathComponent(name + ".png")))
+                if let custom {
+                    let thinking = custom.customThinking?.rawValue ?? "default"
+                    let test = name + "-" + thinking
+                    let request = try ImageRecognizer.request(jpeg: image.jpeg, key: "", settings: custom)
+                    try request.httpBody!.write(to: folder.appendingPathComponent(test + "-request.json"))
+                    manifest.append(["test": test, "thinking": thinking, "expected_fen": study.initialFEN,
+                                     "expected_bottom_side": study.bottomSide.rawValue,
+                                     "timeout": String(request.timeoutInterval), "endpoint": request.url!.absoluteString,
+                                     "api": custom.api.rawValue, "model": custom.model])
+                    continue
+                }
                 let levels: [RecognitionThinking] = name == "editor-red-32" ? [.high] : name == "editor-red-5" ? [.off, .high, .max] : [.off, .high]
                 for level in levels {
                     let test = name + "-" + level.rawValue
@@ -221,14 +267,14 @@ enum ImageImportCheck {
             }
             try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
                 .write(to: folder.appendingPathComponent("manifest.json"))
-            print("Prepared \(manifest.count) real-API request fixtures under build/recognition-audit; no credentials stored.")
+            print("Prepared \(manifest.count) real-API request fixtures; no credentials stored.")
             exit(0)
         } catch { fputs("AUDIT_PREPARE_FAILED: \(error.localizedDescription)\n", stderr); exit(1) }
     }
 
     static func auditResponses() -> Never {
         do {
-            let folder = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("build/recognition-audit")
+            let folder = auditFolder
             let manifest = try JSONDecoder().decode([[String: String]].self, from: Data(contentsOf: folder.appendingPathComponent("manifest.json")))
             var report: [[String: Any]] = []
             func identities(_ pieces: [ChessPiece]) -> Set<String> { Set(pieces.map { "\($0.side.rawValue):\($0.kind.rawValue):\($0.square.uci)" }) }
@@ -245,6 +291,10 @@ enum ImageImportCheck {
                     entry["missing"] = expected.subtracting(actual).sorted()
                     entry["extra"] = actual.subtracting(expected).sorted()
                     entry["bottom_side"] = result.bottomSide.rawValue
+                    entry["exact_position"] = expected == actual
+                    if let bottom = fixture["expected_bottom_side"] {
+                        entry["orientation_correct"] = result.bottomSide.rawValue == bottom
+                    }
                 } catch { entry["error"] = error.localizedDescription }
                 report.append(entry)
             }
