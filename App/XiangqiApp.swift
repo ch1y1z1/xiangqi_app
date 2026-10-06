@@ -3,6 +3,10 @@ import SwiftUI
 @main
 struct XiangqiApp: App {
     @StateObject private var store = StudyStore()
+    @StateObject private var recognition = ImageRecognitionJob.shared
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(RecognitionAppDelegate.self) private var appDelegate
+    #endif
     init() {
         #if DEBUG
         if CommandLine.arguments.contains("--check-image-import") { ImageImportCheck.run() }
@@ -24,5 +28,7 @@ struct XiangqiApp: App {
         WindowGroup("象棋残局") { rootView }
         #endif
     }
-    private var rootView: some View { LibraryView().environmentObject(store).preferredColorScheme(.light) }
+    private var rootView: some View {
+        LibraryView().environmentObject(store).environmentObject(recognition).preferredColorScheme(.light)
+    }
 }

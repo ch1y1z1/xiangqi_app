@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 
 struct ImageImportView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var recognition: ImageRecognitionJob
     @State private var photo: PhotosPickerItem?
     @State private var image: RecognitionImage?
     @State private var pickingFile = false
@@ -11,10 +13,12 @@ struct ImageImportView: View {
     @State private var settings = RecognitionSettings.saved
     @State private var configured = false
     @State private var loading = false
-    @State private var recognizing = false
     @State private var message: String?
+    @State private var submittedJob: UUID?
+    // This task only prepares a selected photo; recognition belongs to the app.
     @State private var work: Task<Void, Never>?
     var onImport: (RecognizedSetup) -> Void
+    private var recognizing: Bool { recognition.isRunning }
     private var busy: Bool { loading || recognizing }
 
     var body: some View {
@@ -22,7 +26,9 @@ struct ImageImportView: View {
             HStack {
                 Text("从图片摆棋").font(.system(size: 20, weight: .semibold, design: .serif)).foregroundStyle(Palette.ink)
                 Spacer()
-                Button(recognizing ? "取消识别" : "取消") { work?.cancel(); dismiss() }.foregroundStyle(Palette.muted)
+                Button(recognizing ? "取消识别" : "取消") {
+                    work?.cancel(); recognition.discard(); dismiss()
+                }.foregroundStyle(Palette.muted)
             }.buttonStyle(.plain).padding(20)
             ScrollView {
                 VStack(spacing: 18) {
@@ -53,7 +59,7 @@ struct ImageImportView: View {
                     Button { showingSettings = true } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "key")
-                            Text(configured ? settings.description : "先配置图片识别服务")
+                            Text(recognition.record?.summary ?? (configured ? settings.description : "先配置图片识别服务"))
                             Spacer()
                             Image(systemName: "chevron.right")
                         }.font(.system(size: 13, weight: .medium)).foregroundStyle(Palette.teal)
@@ -64,16 +70,27 @@ struct ImageImportView: View {
                         Text("点击识别会将这张图片发送给\(settings.serviceName)，需要联网；收费服务会消耗 API 额度。识别成功后替换当前摆棋，进入编辑器检查棋子、名称与先行方，再保存残局。")
                             .font(.system(size: 12)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
-                    if let message {
+                    if let message = message ?? recognition.record?.message {
                         Text(message).font(.system(size: 12)).foregroundStyle(Palette.red)
                             .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
                     }
                 }.padding(20).frame(maxWidth: 490).frame(maxWidth: .infinity)
             }
             VStack(spacing: 10) {
-                if recognizing { ProgressView("\(settings.serviceName)正在识别棋盘…").font(.system(size: 12)).foregroundStyle(Palette.muted) }
-                ActionButton(title: recognizing ? "正在识别…" : "识别并导入", icon: "sparkles", prominent: true,
-                             disabled: busy || image == nil || !configured, action: recognize)
+                if recognizing {
+                    ProgressView("\(recognition.record?.service ?? settings.serviceName)正在识别棋盘…")
+                        .font(.system(size: 12)).foregroundStyle(Palette.muted)
+                    Text("可以切换 App 或锁屏，回来后查看结果。")
+                        .font(.system(size: 11)).foregroundStyle(Palette.muted)
+                }
+                if recognition.record?.status == .ready {
+                    Text("识别已完成，请导入后检查棋子与先行方。")
+                        .font(.system(size: 12)).foregroundStyle(Palette.teal)
+                    ActionButton(title: "导入识别结果", icon: "square.and.arrow.down", prominent: true, action: importResult)
+                } else {
+                    ActionButton(title: recognizing ? "正在识别…" : "识别并导入", icon: "sparkles", prominent: true,
+                                 disabled: busy || image == nil || !configured, action: recognize)
+                }
             }.padding(20).background(Palette.paper)
         }.background(Palette.paper).tint(Palette.teal)
         #if os(macOS)
@@ -100,7 +117,13 @@ struct ImageImportView: View {
             }
         }
         .sheet(isPresented: $showingSettings, onDismiss: refreshSettings) { SettingsView() }
-        .onAppear(perform: refreshSettings)
+        .onAppear {
+            refreshSettings()
+            if image == nil, let data = recognition.imageData { image = try? RecognitionImage(data: data) }
+            importIfReady()
+        }
+        .onChange(of: recognition.record?.status) { _, _ in importIfReady() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { importIfReady() } }
         .onDisappear { work?.cancel() }
         .interactiveDismissDisabled(recognizing)
     }
@@ -117,6 +140,8 @@ struct ImageImportView: View {
     }
     private func prepare(_ read: @escaping () async throws -> Data) {
         work?.cancel()
+        recognition.discard()
+        submittedJob = nil
         loading = true; message = nil
         work = Task { @MainActor in
             do {
@@ -131,20 +156,23 @@ struct ImageImportView: View {
     }
     private func recognize() {
         guard let image, !busy else { return }
-        work?.cancel()
-        recognizing = true; message = nil
-        work = Task { @MainActor in
-            do {
-                let configuration = settings
-                let key = try DeepSeekKeychain.load(for: configuration.provider)
-                let result = try await ImageRecognizer().recognize(jpeg: image.jpeg, key: key, settings: configuration)
-                try Task.checkCancellation()
-                recognizing = false
-                onImport(result)
-                dismiss()
-            } catch {
-                if !Task.isCancelled { recognizing = false; message = error.localizedDescription; refreshSettings() }
-            }
-        }
+        message = nil
+        do {
+            let key = try DeepSeekKeychain.load(for: settings.provider)
+            submittedJob = try recognition.start(jpeg: image.jpeg, key: key, settings: settings)
+        } catch { message = error.localizedDescription; refreshSettings() }
+    }
+    private func importIfReady() {
+        // Only the sheet that submitted this job may automatically replace its board.
+        // Restored jobs and other windows require an explicit import.
+        guard scenePhase == .active, let submittedJob,
+              recognition.record?.id == submittedJob, recognition.record?.status == .ready else { return }
+        importResult()
+    }
+    private func importResult() {
+        guard scenePhase == .active, let result = recognition.record?.result else { return }
+        onImport(result)
+        recognition.discard()
+        dismiss()
     }
 }

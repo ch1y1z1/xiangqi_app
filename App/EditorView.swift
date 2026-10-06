@@ -15,9 +15,10 @@ struct EditorView: View {
     private let original: Study
     private let onSave: (Study, Bool) throws -> Void
 
-    init(study: Study, onSave: @escaping (Study, Bool) throws -> Void) {
+    init(study: Study, importingImage: Bool = false, onSave: @escaping (Study, Bool) throws -> Void) {
         original = study
         _draft = State(initialValue: study)
+        _importingImage = State(initialValue: importingImage)
         self.onSave = onSave
     }
     var body: some View {
@@ -45,7 +46,7 @@ struct EditorView: View {
                             Image(systemName: "photo.badge.plus").font(.system(size: 20)).foregroundStyle(Palette.teal)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("从图片识别残局").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.ink)
-                                Text("DeepSeek 识别，导入后可校正").font(.system(size: 11)).foregroundStyle(Palette.muted)
+                                Text("从图片摆棋，导入后可校正").font(.system(size: 11)).foregroundStyle(Palette.muted)
                             }
                             Spacer()
                             Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.teal)

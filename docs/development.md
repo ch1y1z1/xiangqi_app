@@ -51,7 +51,7 @@ build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --rend
 
 `--check` 检查合法走子、多分支复用、JSON 保存恢复、改名保留分支、重新摆棋的历史副本与 AI 暂停、草稿校验、少量安全吃子样例、包内模型推荐与取消。它只使用临时残局目录，不改动用户棋库。`--render-preview` 将实际 SwiftUI 页面渲染到离屏视图，输出到 `build/previews/`；它不截取桌面，不模拟用户输入。
 
-`--check-image-import` 只验证图片导入：坐标换算、照片旋转与结构校验，DeepSeek 四档思考兼容，自定义地址解析、可选鉴权、Completions／Responses 图片与 JSON 请求格式、标准思考参数、模拟 HTTP 导入与不完整响应拒绝。使用虚拟密钥并拦截 HTTP，不读取个人密钥，不请求外网，不消耗额度；图片功能变更不需要重跑引擎探针。真实 DeepSeek／GPT Luna 测试和手动复现方法见 [图片识别说明](image-import.md)。
+`--check-image-import` 只验证图片导入：坐标换算、照片旋转与结构校验，DeepSeek 四档思考兼容，自定义地址解析、可选鉴权、Completions／Responses 图片与 JSON 请求格式、标准思考参数、模拟 HTTP 导入与不完整响应拒绝，以及文件上传、结果保存恢复、取消后迟到回调、HTTP 错误与中断任务恢复。使用虚拟密钥并拦截 HTTP，不读取个人密钥，不请求外网，不消耗额度；图片功能变更不需要重跑引擎探针。真实 DeepSeek／GPT Luna 测试和手动复现方法见 [图片识别说明](image-import.md)。
 
 Mac Debug 的 `--prepare-recognition-audit` 可配合 `--audit-endpoint`、`--audit-model`、`--audit-api` 生成自定义服务的真实请求样例；`--audit-output` 指定输出目录，`--audit-thinking` 指定可选思考档位。准备步骤不连接服务，真实调用只在手动运行 `scripts/audit-custom-recognition.py` 并输入密钥时发生。`--audit-recognition-responses --audit-output …` 使用实际 Swift 解析器核对指定目录的响应。
 
@@ -71,6 +71,10 @@ xcrun simctl launch booted com.chiyizi.xiangqi
 2026-10-05 已完成三平台完整构建、Mac 与 iPhone 17 Pro／iOS 26.4 模拟器中的关键流程检查及模拟器正常启动。记录见 [development-validation.json](development-validation.json)，页面预览见 [previews/pages.png](previews/pages.png)。
 
 原生窗口的点击／拖动与手机手感仍需实际操作确认，不把离屏渲染称为交互测试。真机重点检查一次离线闭环、动画／震动、切后台和引擎内存即可。
+
+图片后台识别改动需在真机做一次长请求验证：开始识别后切换 App 或锁屏，等待结果返回再打开；确认原页面恢复结果、明确取消不导入迟到结果。强制关闭 App 后重新打开应显示中断状态，或恢复已经保存的完成结果，不应卡在无限等待或自动重新请求。可分别使用 DeepSeek 与自定义 Responses 服务，无需重新运行引擎探针。
+
+2026-10-06 后台识别实现已通过 Xcode 26.4 的 Mac 与未签名 iOS 构建、`--check-image-import` 和实际 SwiftUI 离屏预览。本地 HTTP 服务额外核对文件 POST 请求体、鉴权、两种接口、分段响应及取消后立即重启，共收到 4 次主动发起的请求。此次没有请求真实付费模型，本机真机不可连接，尚未验证 iOS 系统挂起后的传输和唤醒。
 
 ## 代码位置
 

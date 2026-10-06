@@ -118,7 +118,8 @@ enum DevelopmentCheck {
             let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("xiangqi-preview-" + UUID().uuidString)
             defer { try? FileManager.default.removeItem(at: temporary) }
             let store = StudyStore(directory: temporary)
-            try renderScreen(LibraryView().environmentObject(store), name: "library", folder: folder)
+            let recognition = ImageRecognitionJob(directory: temporary.appendingPathComponent("Recognition"))
+            try renderScreen(LibraryView().environmentObject(store).environmentObject(recognition), name: "library", folder: folder)
             try renderScreen(EditorView(study: Study.examples[1], onSave: { _, _ in }), name: "editor", folder: folder)
             try renderScreen(SettingsView(), name: "settings", folder: folder)
             var custom = RecognitionSettings()
@@ -126,7 +127,7 @@ enum DevelopmentCheck {
             custom.address = "https://example.com/v1"
             custom.model = "vision-model"
             try renderScreen(SettingsView(settings: custom), name: "settings-custom", folder: folder)
-            try renderScreen(ImageImportView(onImport: { _ in }), name: "image-import", folder: folder)
+            try renderScreen(ImageImportView(onImport: { _ in }).environmentObject(recognition), name: "image-import", folder: folder)
             try renderScreen(StudyView(study: Study.examples[1], persist: { _ in }), name: "study", folder: folder)
             print("Rendered build/previews/board-preview.png from actual SwiftUI board components.")
         } catch { fputs("RENDER_FAILED: \(error)\n", stderr); status = 1 }

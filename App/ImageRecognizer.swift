@@ -52,18 +52,22 @@ struct ImageRecognizer {
     func recognize(jpeg: Data, key: String, settings: RecognitionSettings) async throws -> RecognizedSetup {
         let (data, response) = try await session.data(for: Self.request(jpeg: jpeg, key: key, settings: settings))
         try Task.checkCancellation()
-        let service = settings.serviceName
-        guard let response = response as? HTTPURLResponse else { throw ImageImportError(message: "\(service)未返回有效响应。") }
-        switch response.statusCode {
+        guard let response = response as? HTTPURLResponse else { throw ImageImportError(message: "\(settings.serviceName)未返回有效响应。") }
+        return try Self.result(from: data, statusCode: response.statusCode,
+                               api: settings.provider == .deepSeek ? .chatCompletions : settings.api,
+                               service: settings.serviceName)
+    }
+
+    static func result(from data: Data, statusCode: Int, api: RecognitionAPI, service: String) throws -> RecognizedSetup {
+        switch statusCode {
         case 200...299: break
         case 400: throw ImageImportError(message: "\(service)不接受当前请求，请检查模型、接口类型、图片与 JSON 输出支持；自定义服务可将思考强度设为服务默认。")
         case 401, 403: throw ImageImportError(message: "\(service)密钥无效或没有权限，请在设置中检查。")
         case 402: throw ImageImportError(message: "\(service)账户余额不足，请充值后重试。")
         case 404: throw ImageImportError(message: "未找到\(service)的接口或模型，请检查 API 地址、接口类型与模型名称。")
         case 429: throw ImageImportError(message: "\(service)请求过于频繁或额度不足，请稍后重试。")
-        default: throw ImageImportError(message: "\(service)请求失败（\(response.statusCode)），请稍后重试。")
+        default: throw ImageImportError(message: "\(service)请求失败（\(statusCode)），请稍后重试。")
         }
-        let api: RecognitionAPI = settings.provider == .deepSeek ? .chatCompletions : settings.api
         let content: String
         do { content = try Self.content(from: data, api: api, service: service) }
         catch let error as ImageImportError { throw error }

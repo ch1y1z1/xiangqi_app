@@ -32,8 +32,8 @@ struct RecognitionImage {
 }
 
 /// Coordinates in the response refer to the image, never to the app's current board orientation.
-struct RecognizedSetup: Decodable {
-    struct Piece: Decodable {
+struct RecognizedSetup: Codable {
+    struct Piece: Codable {
         var side: Side
         var kind: PieceKind
         var column: Int

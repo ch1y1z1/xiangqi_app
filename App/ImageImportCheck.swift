@@ -9,7 +9,7 @@ enum ImageImportCheck {
         Task.detached {
             do {
                 try await check()
-                print("IMAGE_IMPORT_CHECK_PASSED: coordinates, photo orientation, DeepSeek compatibility, custom Completions/Responses requests and imports, thinking settings, incomplete output and invalid key")
+                print("IMAGE_IMPORT_CHECK_PASSED: coordinates, photo orientation, DeepSeek/custom formats, thinking, incomplete output, file upload, result recovery, cancellation and interrupted job")
                 exit(0)
             } catch {
                 fputs("IMAGE_IMPORT_CHECK_FAILED: \(error.localizedDescription)\n", stderr)
@@ -194,6 +194,70 @@ enum ImageImportCheck {
         custom.customThinking = .off
         let restored = try JSONDecoder().decode(RecognitionSettings.self, from: JSONEncoder().encode(custom))
         try require(restored.provider == .custom && restored.api == .responses && restored.customThinking == .off, "Custom settings persistence")
+        try await checkJob(jpeg: jpeg, content: blackBottom)
+    }
+
+    @MainActor private static func checkJob(jpeg: Data, content: String) async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("recognition-check-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockDeepSeek.self]
+        let job = ImageRecognitionJob(directory: directory, configuration: configuration)
+        var settings = RecognitionSettings()
+        settings.provider = .custom
+        settings.address = "https://example.com/v1"
+        settings.model = "vision-model"
+        func waitForFinish(_ job: ImageRecognitionJob) async throws {
+            let deadline = Date().addingTimeInterval(4)
+            while job.isRunning, Date() < deadline { try await Task.sleep(nanoseconds: 20_000_000) }
+            try require(!job.isRunning, "Recognition job did not finish")
+        }
+        for api in RecognitionAPI.allCases {
+            settings.api = api
+            MockDeepSeek.status = 200
+            let payload: [String: Any] = api == .chatCompletions
+                ? ["choices": [["message": ["content": content], "finish_reason": "stop"]]]
+                : ["status": "completed", "output": [["type": "message", "role": "assistant", "status": "completed",
+                    "content": [["type": "output_text", "text": content]]]]]
+            MockDeepSeek.data = try JSONSerialization.data(withJSONObject: payload)
+            let id = try job.start(jpeg: jpeg, key: "dummy-job-secret", settings: settings)
+            let storedRequest = try Data(contentsOf: directory.appendingPathComponent("request.json"))
+            try require(!String(decoding: storedRequest, as: UTF8.self).contains("dummy-job-secret"), "Credential written to request file")
+            try await waitForFinish(job)
+            try require(job.record?.id == id && job.record?.status == .ready, "File upload did not produce a result")
+            let expected = try RecognizedSetup.parse(content)
+            try require(job.record?.result?.chessPieces.map(\.square) == expected.chessPieces.map(\.square), "Uploaded response changed coordinates")
+            let recovered = ImageRecognitionJob(directory: directory, configuration: configuration)
+            try require(recovered.record?.id == id && recovered.record?.result?.pieces.count == expected.pieces.count,
+                        "Completed result was not restored")
+            for name in ["request.json", "response.json"] {
+                try require(!FileManager.default.fileExists(atPath: directory.appendingPathComponent(name).path), "Transfer file retained after completion")
+            }
+            job.discard()
+        }
+        // Cancel before delegate events run; late callbacks must not recreate files or import a result.
+        _ = try job.start(jpeg: jpeg, key: "", settings: settings)
+        job.discard()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        try require(job.record == nil && !FileManager.default.fileExists(atPath: directory.path), "Cancelled result reappeared")
+
+        MockDeepSeek.status = 401
+        _ = try job.start(jpeg: jpeg, key: "dummy-job-secret", settings: settings)
+        try await waitForFinish(job)
+        try require(job.record?.status == .failed && job.record?.message?.contains("密钥") == true, "HTTP error was not preserved")
+
+        // Restore a pending record without a corresponding system task, as after a force quit.
+        _ = try job.start(jpeg: jpeg, key: "", settings: settings)
+        let pending = try Data(contentsOf: directory.appendingPathComponent("job.json"))
+        job.discard()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try pending.write(to: directory.appendingPathComponent("job.json"))
+        try jpeg.write(to: directory.appendingPathComponent("image.jpg"))
+        let interrupted = ImageRecognitionJob(directory: directory, configuration: configuration)
+        try await waitForFinish(interrupted)
+        try require(interrupted.record?.status == .failed && interrupted.imageData == jpeg,
+                    "Interrupted job stayed busy or lost its retry image")
+        interrupted.discard()
     }
 
     #if os(macOS)

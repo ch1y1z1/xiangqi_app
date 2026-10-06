@@ -2,18 +2,37 @@ import SwiftUI
 
 struct LibraryView: View {
     @EnvironmentObject private var store: StudyStore
+    @EnvironmentObject private var recognition: ImageRecognitionJob
     @State private var path: [UUID] = []
     @State private var editor: Study?
     @State private var renaming: Study?
     @State private var name = ""
     @State private var deleting: Study?
     @State private var showingSettings = false
+    @State private var resumingRecognition = false
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     header
+                    if let job = recognition.record {
+                        Button {
+                            resumingRecognition = true
+                            editor = Study(name: "新残局", pieces: [])
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: job.status == .running ? "photo" : job.status == .ready ? "checkmark.circle" : "exclamationmark.circle")
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(job.status == .running ? "图片正在识别" : job.status == .ready ? "图片识别已完成" : "图片识别未完成")
+                                        .font(.system(size: 14, weight: .semibold))
+                                    Text("\(job.summary) · 点击查看").font(.system(size: 11)).foregroundStyle(Palette.muted)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.system(size: 11))
+                            }.foregroundStyle(Palette.teal).cardStyle()
+                        }.buttonStyle(.plain)
+                    }
                     if let recent = store.studies.first(where: { !$0.isDraft }) {
                         VStack(alignment: .leading, spacing: 12) {
                             sectionTitle("继续研究", detail: "\(store.studies.count) 个残局")
@@ -57,8 +76,8 @@ struct LibraryView: View {
                     StudyView(study: study, persist: { try store.saveEdited($0) })
                 }
             }
-            .sheet(item: $editor) { draft in
-                EditorView(study: draft) { study, start in
+            .sheet(item: $editor, onDismiss: { resumingRecognition = false }) { draft in
+                EditorView(study: draft, importingImage: resumingRecognition) { study, start in
                     try store.saveEdited(study); editor = nil
                     if start { path.append(study.id) }
                 }
