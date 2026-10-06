@@ -2,14 +2,14 @@ import Foundation
 import Security
 
 enum DeepSeekKeychain {
-    private static var query: [String: Any] {
+    private static func query(for provider: RecognitionProvider) -> [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,
-         kSecAttrService as String: (Bundle.main.bundleIdentifier ?? "com.chiyizi.xiangqi") + ".deepseek",
+         kSecAttrService as String: (Bundle.main.bundleIdentifier ?? "com.chiyizi.xiangqi") + provider.keychainSuffix,
          kSecAttrAccount as String: "api-key"]
     }
 
-    static func load() throws -> String {
-        var query = query
+    static func load(for provider: RecognitionProvider = .deepSeek) throws -> String {
+        var query = query(for: provider)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var item: CFTypeRef?
@@ -21,7 +21,8 @@ enum DeepSeekKeychain {
         return key
     }
 
-    static func save(_ key: String) throws {
+    static func save(_ key: String, for provider: RecognitionProvider = .deepSeek) throws {
+        let query = query(for: provider)
         let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             let status = SecItemDelete(query as CFDictionary)

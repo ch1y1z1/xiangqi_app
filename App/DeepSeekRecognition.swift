@@ -94,8 +94,7 @@ struct RecognizedSetup: Decodable {
 struct DeepSeekRecognizer {
     static let model = "deepseek-v4-flash"
     static let endpoint = URL(string: "https://api.deepseek.com/chat/completions")!
-    private static let session = URLSession(configuration: .ephemeral)
-    var session: URLSession = Self.session
+    var session: URLSession = ImageRecognizer.sharedSession
 
     static let prompt = """
     你是一名中国象棋棋盘识别助手。识别用户图片中的一个完整棋盘，输出棋子的位置，不推演着法。
@@ -145,34 +144,8 @@ struct DeepSeekRecognizer {
     }
 
     func recognize(jpeg: Data, key: String, thinking: RecognitionThinking = .defaultValue) async throws -> RecognizedSetup {
-        let (data, response) = try await session.data(for: Self.request(jpeg: jpeg, key: key, thinking: thinking))
-        try Task.checkCancellation()
-        guard let response = response as? HTTPURLResponse else { throw ImageImportError(message: "DeepSeek 未返回有效响应。") }
-        switch response.statusCode {
-        case 200...299: break
-        case 401: throw ImageImportError(message: "DeepSeek 密钥无效，请在设置中检查。")
-        case 402: throw ImageImportError(message: "DeepSeek 账户余额不足，请充值后重试。")
-        case 429: throw ImageImportError(message: "DeepSeek 请求过于频繁，请稍后重试。")
-        default: throw ImageImportError(message: "DeepSeek 请求失败（\(response.statusCode)），请稍后重试。")
-        }
-        struct Completion: Decodable {
-            struct Choice: Decodable {
-                struct Message: Decodable { var content: String? }
-                var message: Message
-                var finish_reason: String?
-            }
-            var choices: [Choice]
-        }
-        let completion: Completion
-        do { completion = try JSONDecoder().decode(Completion.self, from: data) }
-        catch { throw ImageImportError(message: "无法读取 DeepSeek 的识别响应，请重试。") }
-        guard let choice = completion.choices.first else {
-            throw ImageImportError(message: "DeepSeek 没有返回识别结果，请重试。")
-        }
-        guard choice.finish_reason != "length" else { throw ImageImportError(message: "识别结果不完整，请重试。") }
-        guard let content = choice.message.content, !content.isEmpty else {
-            throw ImageImportError(message: "DeepSeek 没有返回识别结果，请重试。")
-        }
-        return try RecognizedSetup.parse(content)
+        var settings = RecognitionSettings()
+        settings.deepSeekThinking = thinking
+        return try await ImageRecognizer(session: session).recognize(jpeg: jpeg, key: key, settings: settings)
     }
 }

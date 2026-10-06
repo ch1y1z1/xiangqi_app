@@ -8,7 +8,8 @@ struct ImageImportView: View {
     @State private var image: RecognitionImage?
     @State private var pickingFile = false
     @State private var showingSettings = false
-    @State private var hasKey = false
+    @State private var settings = RecognitionSettings.saved
+    @State private var configured = false
     @State private var loading = false
     @State private var recognizing = false
     @State private var message: String?
@@ -52,7 +53,7 @@ struct ImageImportView: View {
                     Button { showingSettings = true } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "key")
-                            Text(hasKey ? "DeepSeek 设置 · 密钥与思考强度" : "先设置 DeepSeek API 密钥")
+                            Text(configured ? settings.description : "先配置图片识别服务")
                             Spacer()
                             Image(systemName: "chevron.right")
                         }.font(.system(size: 13, weight: .medium)).foregroundStyle(Palette.teal)
@@ -60,7 +61,7 @@ struct ImageImportView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Label("识别后仍可自由调整", systemImage: "square.and.pencil")
                             .font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.ink)
-                        Text("点击识别会将这张图片发送给 DeepSeek，需要联网并消耗 API 额度。识别成功后替换当前摆棋，进入编辑器检查棋子、名称与先行方，再保存残局。")
+                        Text("点击识别会将这张图片发送给\(settings.serviceName)，需要联网；收费服务会消耗 API 额度。识别成功后替换当前摆棋，进入编辑器检查棋子、名称与先行方，再保存残局。")
                             .font(.system(size: 12)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
                     if let message {
@@ -70,9 +71,9 @@ struct ImageImportView: View {
                 }.padding(20).frame(maxWidth: 490).frame(maxWidth: .infinity)
             }
             VStack(spacing: 10) {
-                if recognizing { ProgressView("DeepSeek 正在识别棋盘…").font(.system(size: 12)).foregroundStyle(Palette.muted) }
+                if recognizing { ProgressView("\(settings.serviceName)正在识别棋盘…").font(.system(size: 12)).foregroundStyle(Palette.muted) }
                 ActionButton(title: recognizing ? "正在识别…" : "识别并导入", icon: "sparkles", prominent: true,
-                             disabled: busy || image == nil || !hasKey, action: recognize)
+                             disabled: busy || image == nil || !configured, action: recognize)
             }.padding(20).background(Palette.paper)
         }.background(Palette.paper).tint(Palette.teal)
         #if os(macOS)
@@ -98,15 +99,21 @@ struct ImageImportView: View {
                 return data
             }
         }
-        .sheet(isPresented: $showingSettings, onDismiss: refreshKey) { SettingsView() }
-        .onAppear(perform: refreshKey)
+        .sheet(isPresented: $showingSettings, onDismiss: refreshSettings) { SettingsView() }
+        .onAppear(perform: refreshSettings)
         .onDisappear { work?.cancel() }
         .interactiveDismissDisabled(recognizing)
     }
 
-    private func refreshKey() {
-        do { hasKey = !(try DeepSeekKeychain.load()).isEmpty }
-        catch { hasKey = false; message = error.localizedDescription }
+    private func refreshSettings() {
+        settings = .saved
+        do {
+            try settings.validate(key: DeepSeekKeychain.load(for: settings.provider))
+            configured = true
+        } catch {
+            configured = false
+            if !(error is ImageImportError) { message = error.localizedDescription }
+        }
     }
     private func prepare(_ read: @escaping () async throws -> Data) {
         work?.cancel()
@@ -128,15 +135,15 @@ struct ImageImportView: View {
         recognizing = true; message = nil
         work = Task { @MainActor in
             do {
-                let key = try DeepSeekKeychain.load()
-                let thinking = RecognitionThinking.saved
-                let result = try await DeepSeekRecognizer().recognize(jpeg: image.jpeg, key: key, thinking: thinking)
+                let configuration = settings
+                let key = try DeepSeekKeychain.load(for: configuration.provider)
+                let result = try await ImageRecognizer().recognize(jpeg: image.jpeg, key: key, settings: configuration)
                 try Task.checkCancellation()
                 recognizing = false
                 onImport(result)
                 dismiss()
             } catch {
-                if !Task.isCancelled { recognizing = false; message = error.localizedDescription; refreshKey() }
+                if !Task.isCancelled { recognizing = false; message = error.localizedDescription; refreshSettings() }
             }
         }
     }

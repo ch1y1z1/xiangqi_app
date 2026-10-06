@@ -35,7 +35,7 @@ def main():
                  ROOT / 'Resources/Pikafish-AUTHORS', ROOT / 'Resources/Network-LICENSE.md',
                  ROOT / 'Resources/Network-Upstream-README.md', ROOT / 'Resources/Assets.xcassets']
     references, sources, resource_builds = [], [], []
-    for path in source_files + resources + [ROOT / 'Engine/BridgingHeader.h', ROOT / 'Engine/PikafishBridge.h']:
+    for path in source_files + resources + [ROOT / 'Engine/BridgingHeader.h', ROOT / 'Engine/PikafishBridge.h', ROOT / 'App/Info.plist']:
         relative = str(path.relative_to(ROOT))
         ext = path.suffix
         filetype = {'.swift': 'sourcecode.swift', '.cpp': 'sourcecode.cpp.cpp', '.mm': 'sourcecode.cpp.objcpp',
@@ -61,7 +61,7 @@ def main():
         'CLANG_ENABLE_OBJC_ARC': 'YES', 'GCC_ENABLE_CPP_EXCEPTIONS': 'NO', 'ALWAYS_SEARCH_USER_PATHS': 'NO',
         'GCC_PREPROCESSOR_DEFINITIONS': ['$(inherited)', 'NDEBUG', 'IS_64BIT', 'USE_NEON', 'USE_POPCNT', 'ZSTD_DISABLE_ASM'],
         'HEADER_SEARCH_PATHS': ['$(SRCROOT)/build/engine', '$(SRCROOT)/Engine'],
-        'GENERATE_INFOPLIST_FILE': 'YES', 'INFOPLIST_KEY_CFBundleDisplayName': '象棋残局',
+        'GENERATE_INFOPLIST_FILE': 'YES', 'INFOPLIST_FILE': 'App/Info.plist', 'INFOPLIST_KEY_CFBundleDisplayName': '象棋残局',
         'INFOPLIST_KEY_LSApplicationCategoryType': 'public.app-category.board-games',
         'INFOPLIST_KEY_UIApplicationSceneManifest_Generation': 'YES',
         'INFOPLIST_KEY_UILaunchScreen_Generation': 'YES',

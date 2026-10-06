@@ -9,7 +9,7 @@ enum ImageImportCheck {
         Task.detached {
             do {
                 try await check()
-                print("IMAGE_IMPORT_CHECK_PASSED: 180 image/render/hit-test intersections, FEN anchors, photo orientation, response validation, four thinking settings, HTTP import and invalid key")
+                print("IMAGE_IMPORT_CHECK_PASSED: coordinates, photo orientation, DeepSeek compatibility, custom Completions/Responses requests and imports, thinking settings, incomplete output and invalid key")
                 exit(0)
             } catch {
                 fputs("IMAGE_IMPORT_CHECK_FAILED: \(error.localizedDescription)\n", stderr)
@@ -125,6 +125,75 @@ enum ImageImportCheck {
         } catch let error as ImageImportError {
             try require(error.message.contains("密钥无效"), "Actionable invalid-key message")
         }
+
+        var custom = RecognitionSettings()
+        custom.provider = .custom
+        custom.model = "vision-model"
+        custom.address = "https://example.com/v1/"
+        try require(RecognitionProvider.deepSeek.keychainSuffix != RecognitionProvider.custom.keychainSuffix, "Provider keys stay separate")
+        for api in RecognitionAPI.allCases {
+            custom.api = api
+            custom.address = "https://example.com/v1/"
+            try require(try custom.endpoint().absoluteString == "https://example.com/v1" + api.path, "Base URL resolution")
+            custom.address = "https://example.com/v1/chat/completions?version=1"
+            try require(try custom.endpoint().absoluteString == "https://example.com/v1" + api.path + "?version=1", "Full endpoint and format switching")
+            custom.address = "http://127.0.0.1:8000/v1"
+            let anonymous = try ImageRecognizer.request(jpeg: jpeg, key: "", settings: custom)
+            try require(anonymous.value(forHTTPHeaderField: "Authorization") == nil && anonymous.url?.scheme == "http", "Keyless local HTTP service")
+            let request = try ImageRecognizer.request(jpeg: jpeg, key: "custom-dummy", settings: custom)
+            let body = try JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
+            try require(request.value(forHTTPHeaderField: "Authorization") == "Bearer custom-dummy", "Custom bearer authentication")
+            try require(body["model"] as? String == "vision-model" && body["thinking"] == nil && body["temperature"] == nil, "Custom model without vendor extensions")
+            try require(body["reasoning_effort"] == nil && body["reasoning"] == nil && body["max_completion_tokens"] == nil && body["max_output_tokens"] == nil, "Service-default reasoning")
+            if api == .chatCompletions {
+                let messages = body["messages"] as! [[String: Any]]
+                let parts = messages[1]["content"] as! [[String: Any]]
+                try require((parts[1]["image_url"] as? [String: String])?["url"] == image["url"], "Completions image wire format")
+                try require((body["response_format"] as? [String: String])?["type"] == "json_object" && body["input"] == nil, "Completions JSON wire format")
+            } else {
+                let input = body["input"] as! [[String: Any]]
+                let parts = input[0]["content"] as! [[String: Any]]
+                let text = body["text"] as! [String: [String: String]]
+                try require(parts[1]["type"] as? String == "input_image" && parts[1]["image_url"] as? String == image["url"], "Responses image wire format")
+                try require(text["format"]?["type"] == "json_object" && body["store"] as? Bool == false && body["messages"] == nil, "Responses JSON format and stateless request")
+            }
+            custom.customThinking = .max
+            let thinkingRequest = try ImageRecognizer.request(jpeg: jpeg, key: "custom-dummy", settings: custom)
+            let thinkingBody = try JSONSerialization.jsonObject(with: thinkingRequest.httpBody!) as! [String: Any]
+            let effort = api == .chatCompletions ? thinkingBody["reasoning_effort"] as? String : (thinkingBody["reasoning"] as? [String: String])?["effort"]
+            try require(effort == "xhigh" && thinkingRequest.timeoutInterval == 360, "Standard custom reasoning effort")
+            custom.customThinking = nil
+            MockDeepSeek.status = 200
+            let output: [[String: Any]] = [
+                ["type": "reasoning", "summary": [["type": "summary_text", "text": "Ignore reasoning text"]]],
+                ["type": "message", "role": "assistant", "status": "completed", "content": [["type": "output_text", "text": blackBottom]]]
+            ]
+            let payload: [String: Any]
+            if api == .chatCompletions {
+                payload = ["choices": [["message": ["content": blackBottom], "finish_reason": "stop"]]]
+            } else { payload = ["status": "completed", "output": output] }
+            MockDeepSeek.data = try JSONSerialization.data(withJSONObject: payload)
+            let imported = try await ImageRecognizer(session: session).recognize(jpeg: jpeg, key: "", settings: custom)
+            try require(ChessPosition.fen(pieces: imported.chessPieces, side: .red) == fen, "Custom HTTP import and black-bottom coordinates")
+            if api == .responses {
+                MockDeepSeek.data = try JSONSerialization.data(withJSONObject: ["status": "incomplete", "output": output])
+                do {
+                    _ = try await ImageRecognizer(session: session).recognize(jpeg: jpeg, key: "", settings: custom)
+                    throw NSError(domain: "ImageImportCheck", code: 4, userInfo: [NSLocalizedDescriptionKey: "Incomplete Responses output was accepted"])
+                } catch let error as ImageImportError { try require(error.message.contains("不完整"), "Incomplete Responses output rejected") }
+            }
+        }
+        for invalid in ["", "ftp://example.com", "https:///", "https://user:password@example.com/v1"] {
+            custom.address = invalid
+            do {
+                _ = try custom.endpoint()
+                throw NSError(domain: "ImageImportCheck", code: 5, userInfo: [NSLocalizedDescriptionKey: "Invalid custom endpoint was accepted"])
+            } catch is ImageImportError { /* Expected. */ }
+        }
+        custom.address = "https://example.com/v1"
+        custom.customThinking = .off
+        let restored = try JSONDecoder().decode(RecognitionSettings.self, from: JSONEncoder().encode(custom))
+        try require(restored.provider == .custom && restored.api == .responses && restored.customThinking == .off, "Custom settings persistence")
     }
 
     #if os(macOS)

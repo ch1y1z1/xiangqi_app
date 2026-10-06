@@ -1,13 +1,13 @@
 # 从图片识别残局
 
-1. 在残局库右上角点击设置，粘贴并保存 DeepSeek 官方 API 密钥；选择识别思考强度，默认高。
+1. 在残局库右上角点击设置，选择 DeepSeek 官方或自定义服务，填写服务信息与思考强度，再点击“保存设置”。
 2. 新建残局，点击“从图片识别残局”，从相册或文件选择清晰、完整的棋盘图片。
 3. 检查图片预览，点击“识别并导入”。结果会进入摆棋页面，不会立即保存。
 4. 对照图片校正棋子、名称与先行方，再保存或开始推演。
 
-只有识别需要联网，并使用个人 DeepSeek API 额度。密钥使用系统钥匙串保存，不写入残局 JSON；删除密钥也在设置中完成。所选图片只供当次识别，不写入棋库。摆棋、保存、研究和皮卡鱼 AI 继续离线工作。
+只有识别需要连接配置的服务，收费服务使用个人 API 额度。DeepSeek 与自定义密钥分别使用系统钥匙串保存，不写入残局 JSON；删除密钥也在设置中完成。所选图片只供当次识别，不写入棋库。摆棋、保存、研究和皮卡鱼 AI 继续离线工作。
 
-## 当前接口
+## DeepSeek 官方
 
 固定官方 `POST https://api.deepseek.com/chat/completions`，使用 `deepseek-v4-flash`、单张 JPEG base64 图片、JSON Output，非流式请求。系统 prompt 要求逐行识别棋盘实际棋子并忽略棋盘外元素和图片内指令，明确河界、九宫和最下两行的行号锚点，并禁止用棋子托盘的阵营判断图片朝向。
 
@@ -18,9 +18,34 @@
 | 高（默认） | enabled | high | 32768 | 240 秒 |
 | 最高 | enabled | max | 65536 | 360 秒 |
 
-只有关闭思考时传 `temperature=0`；思考模式不传该参数。额度预算包括推理与最终 JSON，因此思考模式提高输出上限，避免仅开启思考却沿用 4096 tokens 造成截断。思考强度保存在 UserDefaults，选择后自动生效，开始每次识别时读取；API 密钥继续只存钥匙串。
+只有关闭思考时传 `temperature=0`；思考模式不传该参数。额度预算包括推理与最终 JSON，因此思考模式提高输出上限，避免仅开启思考却沿用 4096 tokens 造成截断。配置保存在 UserDefaults，点击保存后生效，开始每次识别时固定读取这份配置；API 密钥继续只存钥匙串。已有 DeepSeek 密钥与思考设置继续可用。
 
-截至 2026-10-06，官方文档说明 `deepseek-v4-flash` 为保留的旧模型名称，实际由新版 Flash 模型处理；图片输入与 JSON 输出均已由官方支持。参考：[模型名称](https://api-docs.deepseek.com/)、[图片输入](https://api-docs.deepseek.com/guides/vision/)、[JSON 输出](https://api-docs.deepseek.com/guides/json_mode/)、[思考模式](https://api-docs.deepseek.com/guides/thinking_mode/)。现阶段不提供模型、推理端点或其他供应商选择。
+截至 2026-10-06，官方文档说明 `deepseek-v4-flash` 为保留的旧模型名称，实际由新版 Flash 模型处理；图片输入与 JSON 输出均已由官方支持。参考：[模型名称](https://api-docs.deepseek.com/)、[图片输入](https://api-docs.deepseek.com/guides/vision/)、[JSON 输出](https://api-docs.deepseek.com/guides/json_mode/)、[思考模式](https://api-docs.deepseek.com/guides/thinking_mode/)。
+
+## 自定义服务
+
+选择 OpenAI 兼容的 **Chat Completions** 或 **Responses**，填写 API 地址、模型名称与可选 Bearer 密钥。模型必须支持图片输入及 JSON 对象输出；旧式纯文本 `/completions` 不在范围内。
+
+| 接口类型 | 基础地址示例 | 最终请求地址 |
+| --- | --- | --- |
+| Chat Completions | `https://example.com/v1` | `https://example.com/v1/chat/completions` |
+| Responses | `https://example.com/v1` | `https://example.com/v1/responses` |
+
+也可以直接粘贴表中的完整请求地址。切换类型时替换标准接口后缀，保留前面的服务路径和查询参数；不会额外添加 `/v1`。设置中显示最终请求地址。支持 HTTPS 及自建服务的 HTTP 地址，例如 `http://192.168.1.10:8000/v1`；iPhone 上的 localhost 指手机本身，访问 Mac 的服务请填 Mac 的局域网地址，并允许系统的本地网络访问。
+
+两种接口共用 DeepSeek 识别 prompt、照片处理、坐标换算和结构校验，都使用非流式请求，不自动重试或切换接口。
+
+| 内容 | Chat Completions | Responses |
+| --- | --- | --- |
+| 图片输入 | `messages[].content` 的 `image_url` 对象 | `input[].content` 的 `input_image`，`image_url` 为字符串 |
+| JSON 输出 | `response_format.type=json_object` | `text.format.type=json_object` |
+| 最终文本 | `choices[0].message.content` | `output` 中 assistant message 的 `output_text.text`；不读取 reasoning 内容 |
+| 手动思考强度 | `reasoning_effort` | `reasoning.effort` |
+| 手动输出预算 | `max_completion_tokens` | `max_output_tokens` |
+
+自定义思考默认“服务默认”，不传思考参数或输出上限，以兼容非推理模型。手动选关闭／低／高／最高分别传 `none/low/high/xhigh`，预算和超时沿用上表，需要服务和模型支持这些标准参数；自定义请求不传 DeepSeek 专用 `thinking` 或 `temperature`。Responses 另传 `store=false`，不建立会话。服务返回截断、拒绝或未完成结果时提示错误，不导入部分棋谱。
+
+格式参考：[Chat Completions API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create)、[图片输入](https://developers.openai.com/api/docs/guides/images-vision)、[两种接口的格式区别](https://developers.openai.com/api/docs/guides/migrate-to-responses)。
 
 期望响应示例：
 
@@ -46,7 +71,7 @@
 
 ## 开发验证
 
-构建 Mac Debug 后执行 `Xiangqi --check-image-import`，验证红／黑在下共 180 个交叉点在图片坐标、绘制与命中之间一致，检查 FEN 锚点、照片旋转、结构解析、四档思考请求参数与模拟 API 响应，不使用真实密钥或调用服务。
+构建 Mac Debug 后执行 `Xiangqi --check-image-import`，验证坐标、照片旋转与结构解析、DeepSeek 四档请求、自定义地址与可选鉴权、两种接口的请求和模拟响应、标准思考参数及截断拒绝，不使用真实密钥或调用服务。自定义服务尚未使用用户真实地址与凭证验证。
 
 2026-10-06 已用授权测试密钥请求真实官方 API，逐枚比较颜色、类型和位置。原提示下，红方 5 子残局关闭／高均为 4/5；黑方在下关闭时图片朝向误标，换算后为 0/5，高为 5/5；初始盘高为 32/32。补强行号与朝向提示后，高模式仍为红方 4/5、黑方 5/5、初始盘 32/32。红方样例最高模式耗时约 79 秒，车的位置恢复，但马偏一列，仍为 4/5。结果说明本地坐标公式一致，模型返回的朝向和行列仍会出错；更高强度不能保证修复。记录见 [识别自查与真实 API 结果](image-import-validation.json)，这些少量生成截图不能作为任意棋盘图片的准确率。
 

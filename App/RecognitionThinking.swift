@@ -1,6 +1,6 @@
 import Foundation
 
-enum RecognitionThinking: String, CaseIterable, Identifiable {
+enum RecognitionThinking: String, Codable, CaseIterable, Identifiable {
     case off, low, high, max
     static let preferenceKey = "imageRecognitionThinking"
     static let defaultValue: Self = .high
@@ -26,4 +26,5 @@ enum RecognitionThinking: String, CaseIterable, Identifiable {
     }
     var maxTokens: Int { self == .off ? 4096 : self == .max ? 65536 : 32768 }
     var timeout: TimeInterval { self == .off ? 120 : self == .max ? 360 : 240 }
+    var compatibleEffort: String { self == .off ? "none" : self == .max ? "xhigh" : rawValue }
 }

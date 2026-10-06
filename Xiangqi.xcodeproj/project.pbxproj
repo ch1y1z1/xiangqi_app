@@ -105,6 +105,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "943FE582294443C8CDE1B63C";
 		};
+		"C38E14087BC3AE499E08895F" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/ImageRecognizer.swift";
+			"sourceTree" = "<group>";
+		};
+		"2C71C28D5AA2428AF7781D6F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "C38E14087BC3AE499E08895F";
+		};
 		"78B2CB0D7E3AABD5E85999E1" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -114,6 +124,16 @@
 		"E82967650E1C993CC0CA32FF" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "78B2CB0D7E3AABD5E85999E1";
+		};
+		"19EF4C0F98B79B795F5C3AC5" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/RecognitionSettings.swift";
+			"sourceTree" = "<group>";
+		};
+		"8254E5CE28D7D3F60F9C0C4A" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "19EF4C0F98B79B795F5C3AC5";
 		};
 		"786B539EDD97BCBFEA498AD1" = {
 			"isa" = "PBXFileReference";
@@ -627,6 +647,12 @@
 			"path" = "Engine/PikafishBridge.h";
 			"sourceTree" = "<group>";
 		};
+		"A2CDD2B51B9CC7AF9D7B2D55" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "file";
+			"path" = "App/Info.plist";
+			"sourceTree" = "<group>";
+		};
 		"38A007151ABE87CC01A5B6E9" = {
 			"isa" = "PBXFileReference";
 			"explicitFileType" = "wrapper.application";
@@ -654,7 +680,9 @@
 				"63EE937DFFC9AD709AA54574",
 				"B96B20A4CCEADBD21583BE65",
 				"943FE582294443C8CDE1B63C",
+				"C38E14087BC3AE499E08895F",
 				"78B2CB0D7E3AABD5E85999E1",
+				"19EF4C0F98B79B795F5C3AC5",
 				"786B539EDD97BCBFEA498AD1",
 				"FC89C398383BAACF950D819D",
 				"ABDE6BF43EA44F48BDE56741",
@@ -707,6 +735,7 @@
 				"4545F5318A0046043187F2EB",
 				"6B80EE1F73A8BBF02F4BC724",
 				"047FE9C253DCAEBAB3336C8D",
+				"A2CDD2B51B9CC7AF9D7B2D55",
 				"FBDC4F23F93125BBEEAE800C",
 			);
 			"sourceTree" = "<group>";
@@ -725,7 +754,9 @@
 				"065B04DB590E925DB72CB484",
 				"E1937F92E723BD3335445013",
 				"2BD88A8D884A09DC76A9A913",
+				"2C71C28D5AA2428AF7781D6F",
 				"E82967650E1C993CC0CA32FF",
+				"8254E5CE28D7D3F60F9C0C4A",
 				"7FEAFE0A5BEE047A425994CF",
 				"C733C6442A281599567C6C83",
 				"13C2CDD4C9DEDAEFF5447ECE",
@@ -825,6 +856,7 @@
 					"$(SRCROOT)/Engine",
 				);
 				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_FILE" = "App/Info.plist";
 				"INFOPLIST_KEY_CFBundleDisplayName" = "象棋残局";
 				"INFOPLIST_KEY_LSApplicationCategoryType" = "public.app-category.board-games";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
@@ -880,6 +912,7 @@
 					"$(SRCROOT)/Engine",
 				);
 				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_FILE" = "App/Info.plist";
 				"INFOPLIST_KEY_CFBundleDisplayName" = "象棋残局";
 				"INFOPLIST_KEY_LSApplicationCategoryType" = "public.app-category.board-games";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";

@@ -121,6 +121,11 @@ enum DevelopmentCheck {
             try renderScreen(LibraryView().environmentObject(store), name: "library", folder: folder)
             try renderScreen(EditorView(study: Study.examples[1], onSave: { _, _ in }), name: "editor", folder: folder)
             try renderScreen(SettingsView(), name: "settings", folder: folder)
+            var custom = RecognitionSettings()
+            custom.provider = .custom
+            custom.address = "https://example.com/v1"
+            custom.model = "vision-model"
+            try renderScreen(SettingsView(settings: custom), name: "settings-custom", folder: folder)
             try renderScreen(ImageImportView(onImport: { _ in }), name: "image-import", folder: folder)
             try renderScreen(StudyView(study: Study.examples[1], persist: { _ in }), name: "study", folder: folder)
             print("Rendered build/previews/board-preview.png from actual SwiftUI board components.")
