@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-07",
+  "scope": "Offline position evaluation, immediate branch comparison and scored AI advice",
+  "toolchain": {
+    "xcode": "26.4",
+    "build": "17E192",
+    "simulator": "iPhone 17 Pro / iOS 26.4"
+  },
+  "builds": {
+    "macOS": "passed, ad-hoc signed",
+    "iOS": "passed, unsigned",
+    "iOS Simulator": "passed, ad-hoc signed"
+  },
+  "checks": {
+    "mac_core": "CHECK_PASSED",
+    "simulator_core": "CHECK_PASSED",
+    "real_engine": "Bundled NNUE returns a legal recommendation and displayable score; cancellation still passes",
+    "controlled_callback_checks": [
+      "Black scores and upper/lower bounds normalize to Red; mate distance is separate",
+      "Missing depth is not a zero score; stalemate awards the opponent the win; draws are explicit",
+      "Current position is evaluated before open branches; explicit AI advice preempts background work",
+      "Branch analysis uses immediate child positions, including when a saved line continues further",
+      "Red prefers higher Red scores and Black prefers lower Red scores within the compared group",
+      "Evaluation neither changes the current node nor adds or reorders branches",
+      "Node cache survives navigation and board orientation changes",
+      "Independent switches persist; scored AI advice works with both switches off",
+      "Closing comparison, changing node or budget, editing setup and leaving reject late results",
+      "Bounds and failed analyses do not produce exact gaps; failures require an explicit retry"
+    ],
+    "existing_checks": "Legal moves, chosen branches, editor selection/undo, JSON restore, draft validation, rename/setup editing and safe capture hints also pass"
+  },
+  "visual_review": {
+    "source": "Actual SwiftUI views with scores from finite bundled Pikafish searches, not static score fixtures",
+    "mac_offscreen_sizes_pt": [[430, 890], [375, 667], [375, 553], [430, 600], [375, 350]],
+    "reviewed_states": [
+      "Compact current-position score with all primary board controls visible",
+      "AI recommendation score with separate adopt action",
+      "Ordinary branch scores with upper/lower bounds",
+      "Mate-distance branch scores in a native iOS medium sheet",
+      "Evaluation detail with scrollable explanations and a visible retry action"
+    ],
+    "native_simulator": "Debug study and branch entry points launched and captured; actual asynchronous scores complete while the comparison sheet is open",
+    "artifacts": ["previews/evaluation.png", "previews/ios-evaluation.png", "previews/pages.png", "previews/ios-pages.png"]
+  },
+  "storage_and_network": "Evaluation cache is session-only, JSON format is unchanged, and no remote API calls are made",
+  "limitations": [
+    "Offscreen rendering and launch captures do not verify native taps, dragging, haptics or navigation gestures",
+    "Physical-device memory, battery usage and system suspension behavior have not been measured",
+    "Finite search scores and same-budget branch gaps are estimates, not win probabilities or proofs of overall optimality"
+  ]
+}
