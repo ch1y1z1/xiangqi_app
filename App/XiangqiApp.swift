@@ -29,6 +29,19 @@ struct XiangqiApp: App {
         #endif
     }
     private var rootView: some View {
-        LibraryView().environmentObject(store).environmentObject(recognition).preferredColorScheme(.light)
+        content.environmentObject(store).environmentObject(recognition).preferredColorScheme(.light)
+    }
+    @ViewBuilder private var content: some View {
+        #if DEBUG
+        if CommandLine.arguments.contains("--preview-editor") {
+            EditorView(previewStudy: Study.examples[1], selected: Study.examples[1].initialPieces.first?.square)
+        } else if CommandLine.arguments.contains("--preview-study") {
+            NavigationStack { StudyView(study: Study.examples[1], persist: { _ in }) }
+        } else {
+            LibraryView()
+        }
+        #else
+        LibraryView()
+        #endif
     }
 }
