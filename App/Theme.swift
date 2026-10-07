@@ -4,7 +4,7 @@ enum Palette {
     static let paper = Color(hex: 0xF7F3EC)
     static let card = Color(hex: 0xFFFCF7)
     static let ink = Color(hex: 0x292D2C)
-    static let muted = Color(hex: 0x858078)
+    static let muted = Color(hex: 0x68635D)
     static let red = Color(hex: 0xA64035)
     static let teal = Color(hex: 0x386B61)
     static let green = Color(hex: 0x429969)
@@ -39,7 +39,7 @@ struct ActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: icon).font(.system(size: 14, weight: .semibold))
-                .frame(maxWidth: .infinity).padding(.vertical, 13)
+                .frame(maxWidth: .infinity, minHeight: 48)
                 .foregroundStyle(prominent ? Color.white : Palette.ink)
                 .background(prominent ? Palette.teal : Palette.card, in: RoundedRectangle(cornerRadius: 13))
                 .overlay(RoundedRectangle(cornerRadius: 13).strokeBorder(prominent ? Color.clear : Palette.line, lineWidth: 1))
@@ -48,14 +48,33 @@ struct ActionButton: View {
     }
 }
 
+struct ToolbarTile: View {
+    var title: String
+    var icon: String
+    var prominent = false
+    var enabled = true
+
+    var body: some View {
+        VStack(spacing: 5) {
+            Image(systemName: icon).font(.system(size: 17, weight: .medium))
+            Text(title).font(.system(size: 12, weight: .medium)).lineLimit(1).minimumScaleFactor(0.85)
+        }
+        .frame(maxWidth: .infinity, minHeight: 52)
+        .foregroundStyle(prominent ? Color.white : Palette.teal)
+        .background(prominent ? Palette.teal : Palette.card, in: RoundedRectangle(cornerRadius: 11))
+        .opacity(enabled ? 1 : 0.4)
+        .contentShape(Rectangle())
+    }
+}
+
 extension View {
     func cardStyle() -> some View {
         self.padding(16).background(Palette.card, in: RoundedRectangle(cornerRadius: 20))
             .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Palette.line.opacity(0.8), lineWidth: 1))
     }
-    @ViewBuilder func inlineNavigation() -> some View {
+    @ViewBuilder func compactNavigation() -> some View {
         #if os(iOS)
-        self.navigationBarTitleDisplayMode(.inline)
+        self.toolbar(.hidden, for: .navigationBar)
         #else
         self
         #endif

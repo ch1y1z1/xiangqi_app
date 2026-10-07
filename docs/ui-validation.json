@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-07",
+  "scope": "Compact study/editor layouts and image correction flow; library and recognition settings cleanup",
+  "toolchain": {
+    "xcode": "26.4",
+    "build": "17E192",
+    "simulator": "iPhone 17 Pro / iOS 26.4"
+  },
+  "builds": {
+    "macOS": "passed, ad-hoc signed",
+    "iOS": "passed, unsigned",
+    "iOS Simulator": "passed, ad-hoc signed"
+  },
+  "checks": {
+    "mac_core": "CHECK_PASSED",
+    "simulator_core": "CHECK_PASSED",
+    "image_import": "IMAGE_IMPORT_CHECK_PASSED; intercepted HTTP, no paid API calls",
+    "new_behavior": [
+      "Forward retains the selected branch; unresolved forks require a choice",
+      "Selecting another board piece preserves both pieces",
+      "Occupied drag destinations are rejected",
+      "Delete and clear can be undone without changing piece identity",
+      "Placing the last available piece ends placement"
+    ],
+    "existing_behavior": [
+      "Legal moves and draft validation",
+      "JSON save/restore and branch reuse",
+      "Rename preserves branches; setup edit saves a backup and pauses AI",
+      "Safe capture hints, packaged NNUE recommendation and search cancellation",
+      "Recognition formats, upload, result recovery, cancellation and interrupted task"
+    ]
+  },
+  "visual_review": {
+    "mac_offscreen_sizes_pt": [
+      [
+        430,
+        890
+      ],
+      [
+        375,
+        667
+      ],
+      [
+        375,
+        553
+      ]
+    ],
+    "reviewed_states": [
+      "Library with a continued study",
+      "Editor with two trays",
+      "Selected piece with contextual delete",
+      "Editor retaining an original image",
+      "Study default and chosen branch",
+      "AI suggestion with separate adopt",
+      "Image import unconfigured and ready for explicit correction",
+      "Custom recognition settings"
+    ],
+    "native_simulator": "Library, editor and study launched and captured; study in NavigationStack with native navigation bar hidden",
+    "artifacts": [
+      "previews/pages.png",
+      "previews/ios-pages.png"
+    ],
+    "result": "All tools and main actions fit the reviewed content areas; native iOS header and bottom actions remain visible"
+  },
+  "reviewed_by_code": [
+    "Dismissing the image sheet leaves the app-owned task running; Stop discards it",
+    "All ready results require explicit import",
+    "Original JPEG and recognition notes are retained in editor memory and not saved to the study",
+    "Removing a provider key only writes to Keychain on Save; Cancel discards changes"
+  ],
+  "limitations": [
+    "Offscreen renders and launch captures do not test native clicks, dragging or pinch gestures",
+    "iPhone touch, haptics and system-suspended long recognition transfers still require a device"
+  ]
+}

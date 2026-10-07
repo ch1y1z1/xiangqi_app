@@ -15,16 +15,24 @@ final class StudySession: ObservableObject {
     @Published var showLastMove = true
     @Published var thinkMilliseconds = 1000
     private var generation = 0
+    private var preferredChildren: [UUID: UUID] = [:]
     private let persist: (Study) throws -> Void
 
     init(study: Study, persist: @escaping (Study) throws -> Void) {
         self.study = study; self.persist = persist; rules = RuleSnapshot(study: study)
+        rememberLine(to: study.currentID)
     }
     var pieces: [ChessPiece] { study.currentPieces }
     var side: Side { study.sideToMove }
     var lastMove: ChessMove? { study.currentNode.move }
     var destinations: Set<BoardSquare> { Set(rules.legalMoves.filter { $0.from == selected }.map(\.to)) }
     var controlledByAI: Bool { aiSide == side && !aiPaused }
+    var forwardChoices: [StudyNode] { study.currentNode.children.compactMap(study.node) }
+    var preferredNext: StudyNode? {
+        if let id = preferredChildren[study.currentID], study.currentNode.children.contains(id) { return study.node(id) }
+        return forwardChoices.count == 1 ? forwardChoices.first : nil
+    }
+    var modeTitle: String { aiSide.map { "AI 执" + ($0 == .red ? "红" : "黑") } ?? "双方手动" }
     var status: String {
         if rules.error != nil { return "草稿 · 请编辑棋子后继续" }
         if rules.finished { return rules.outcome + " · 可回退继续研究" }
@@ -59,6 +67,7 @@ final class StudySession: ObservableObject {
         let capture = pieces.contains { $0.square == move.to }
         invalidate()
         withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) { study.play(move) }
+        rememberLine(to: study.currentID)
         refresh()
         save()
         Feedback.move(capture: capture)
@@ -69,11 +78,12 @@ final class StudySession: ObservableObject {
         guard study.node(id) != nil else { return }
         invalidate()
         if aiSide != nil { aiPaused = true }
+        rememberLine(to: id)
         withAnimation(.easeInOut(duration: 0.16)) { study.currentID = id }
         refresh(); save()
     }
     func back() { if let id = study.currentNode.parentID { jump(to: id) } }
-    func forward() { if let id = study.currentNode.children.first { jump(to: id) } }
+    func forward() { if let next = preferredNext { jump(to: next.id) } }
     func flip() {
         withAnimation(.easeInOut(duration: 0.2)) { study.bottomSide = study.bottomSide.opponent }
         selected = nil; save()
@@ -94,8 +104,10 @@ final class StudySession: ObservableObject {
         stop()
         if aiSide != nil { aiPaused = true }
         try persist(edited)
+        if edited.rootID != study.rootID { preferredChildren.removeAll() }
         withAnimation(.easeInOut(duration: 0.16)) { study = edited }
         rules = RuleSnapshot(study: edited, hints: showLights)
+        rememberLine(to: edited.currentID)
         saved = true
     }
     func toggleLights() { showLights.toggle(); rules = RuleSnapshot(study: study, hints: showLights) }
@@ -124,6 +136,11 @@ final class StudySession: ObservableObject {
     }
     private func invalidate() {
         generation += 1; EngineService.shared.stop(); isThinking = false; suggestion = nil; selected = nil
+    }
+    private func rememberLine(to id: UUID) {
+        for node in study.line(to: id) {
+            if let parent = node.parentID { preferredChildren[parent] = node.id }
+        }
     }
     private func save() {
         study.modifiedAt = Date()

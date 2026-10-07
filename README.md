@@ -6,9 +6,9 @@
 
 ## 首版功能
 
-- 自由摆放与删除棋子，选择红先／黑先，保存与查看残局；保存后可编辑棋子和名称。
-- 从相册或文件识别棋盘图片，导入后校正与保存；支持 DeepSeek 官方及自定义 Chat Completions／Responses 服务，可配置地址、模型、密钥和思考强度。
-- 默认双方手动推演，回退改走保留多个分支。
+- 单页摆棋，红黑两排棋子、选中后删除与撤销，选择红先／黑先，保存与查看残局；保存后可编辑棋子和名称。
+- 从相册或文件识别棋盘图片，完成后手动导入、对照可放大的原图校正与保存；支持 DeepSeek 官方及自定义 Chat Completions／Responses 服务，可配置地址、模型、密钥和思考强度。
+- 默认双方手动推演，起点／回退／前进常驻，回退改走保留多个分支。
 - 离线 AI 推荐下一步、采用建议，以及 AI 接管对方。
 - 合法落点、上一手、将军与安全吃子红绿灯。
 - 默认红方在下，可切换黑方在下；落子动画与 iPhone 震动反馈。
@@ -28,12 +28,13 @@
 - [引擎探针与复现方法](docs/research/README.md)
 - [实际探针结果](docs/research/validation-results.json)
 - [首版 App 验证记录](docs/development-validation.json)
+- [本轮 UI 优化验证记录](docs/ui-validation.json)
 
 已验证保存恢复、多分支、典型红绿灯、包内 NNUE 推荐与取消。页面预览使用实际 SwiftUI 代码离屏渲染，不代表点击／拖动或 iPhone 手感已经验证。
 
 ![残局库、编辑与推演的 SwiftUI 页面预览](docs/previews/pages.png)
 
-[首版 iPhone 模拟器实际启动画面（2026-10-05）](docs/previews/ios-library.png)。
+[当前 iPhone 模拟器页面（2026-10-07）](docs/previews/ios-pages.png)。
 
 ## 快速开始
 

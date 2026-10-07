@@ -14,7 +14,7 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 16) {
                     header
                     if let job = recognition.record {
                         Button {
@@ -26,21 +26,15 @@ struct LibraryView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(job.status == .running ? "图片正在识别" : job.status == .ready ? "图片识别已完成" : "图片识别未完成")
                                         .font(.system(size: 14, weight: .semibold))
-                                    Text("\(job.summary) · 点击查看").font(.system(size: 11)).foregroundStyle(Palette.muted)
+                                    Text(job.status == .ready ? "\(job.result?.chessPieces.count ?? 0) 枚棋子待校正" : job.status == .running ? "点击查看进度" : "查看或重新识别").font(.system(size: 11)).foregroundStyle(Palette.muted)
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right").font(.system(size: 11))
                             }.foregroundStyle(Palette.teal).cardStyle()
                         }.buttonStyle(.plain)
                     }
-                    if let recent = store.studies.first(where: { !$0.isDraft }) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            sectionTitle("继续研究", detail: "\(store.studies.count) 个残局")
-                            Button { path.append(recent.id) } label: { recentCard(recent) }.buttonStyle(.plain)
-                        }
-                    }
                     VStack(alignment: .leading, spacing: 12) {
-                        sectionTitle("我的残局", detail: "本地保存")
+                        sectionTitle("我的残局", detail: "\(store.studies.count) 个")
                         if store.studies.isEmpty {
                             ContentUnavailableView("还没有残局", systemImage: "square.grid.3x3",
                                                    description: Text("从一张空棋盘开始，摆出你的第一局。"))
@@ -53,7 +47,7 @@ struct LibraryView: View {
                                     .buttonStyle(.plain)
                                 Menu { studyActions(study) } label: {
                                     Image(systemName: "ellipsis").font(.system(size: 17, weight: .medium))
-                                        .foregroundStyle(Palette.teal).frame(width: 40, height: 50)
+                                        .foregroundStyle(Palette.teal).frame(width: 44, height: 44)
                                 }.menuStyle(.borderlessButton).menuIndicator(.hidden)
                                     .accessibilityLabel("\(study.name)的操作")
                             }
@@ -62,15 +56,11 @@ struct LibraryView: View {
                             .contextMenu { studyActions(study) }
                         }
                     }
-                    HStack(spacing: 5) {
-                        Image(systemName: "internaldrive")
-                        Text("棋局与推演，留在你的设备上")
-                    }.font(.system(size: 11)).foregroundStyle(Palette.muted).frame(maxWidth: .infinity).padding(.vertical, 6)
                 }
-                .padding(20).frame(maxWidth: 540)
+                .padding(16).frame(maxWidth: 540)
                 .frame(maxWidth: .infinity)
             }
-            .background(Palette.paper)
+            .background(Palette.paper).compactNavigation()
             .navigationDestination(for: UUID.self) { id in
                 if let study = store.studies.first(where: { $0.id == id }) {
                     StudyView(study: study, persist: { try store.saveEdited($0) })
@@ -114,63 +104,46 @@ struct LibraryView: View {
         Button("删除残局", systemImage: "trash", role: .destructive) { deleting = study }
     }
     private var header: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(spacing: 10) {
             ZStack {
-                RoundedRectangle(cornerRadius: 15).fill(Palette.red)
-                Text("棋").font(.custom("STKaiti", size: 29)).foregroundStyle(Color(hex: 0xFFF3DB))
-            }.frame(width: 52, height: 52)
-            VStack(alignment: .leading, spacing: 5) {
-                Text("象棋残局").font(.system(size: 27, weight: .semibold, design: .serif)).foregroundStyle(Palette.ink)
-                Text("摆一盘棋，慢慢推演。").font(.system(size: 12)).foregroundStyle(Palette.muted)
-            }
-            Spacer(minLength: 4)
+                RoundedRectangle(cornerRadius: 12).fill(Palette.red)
+                Text("棋").font(.custom("STKaiti", size: 25)).foregroundStyle(Color(hex: 0xFFF3DB))
+            }.frame(width: 40, height: 40)
+            Text("象棋残局").font(.system(size: 22, weight: .semibold, design: .serif)).foregroundStyle(Palette.ink)
+            Spacer(minLength: 0)
             Button { showingSettings = true } label: {
                 Image(systemName: "gearshape").font(.system(size: 18)).foregroundStyle(Palette.muted)
-                    .frame(width: 34, height: 42)
+                    .frame(width: 44, height: 44)
             }.buttonStyle(.plain).accessibilityLabel("设置")
             Button { editor = Study(name: "新残局", pieces: []) } label: {
                 Image(systemName: "plus").font(.system(size: 19, weight: .medium)).foregroundStyle(Palette.teal)
-                    .frame(width: 42, height: 42).background(Palette.teal.opacity(0.09), in: RoundedRectangle(cornerRadius: 13))
+                    .frame(width: 44, height: 44).background(Palette.teal.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
             }.buttonStyle(.plain).accessibilityLabel("新建残局")
-        }.padding(.top, 8)
+        }
     }
     private func sectionTitle(_ title: String, detail: String) -> some View {
         HStack {
-            Text(title).font(.system(size: 15, weight: .semibold)).foregroundStyle(Palette.ink)
+            Text(title).font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.ink)
             Spacer()
-            Text(detail).font(.system(size: 11)).foregroundStyle(Palette.muted)
+            Text(detail).font(.system(size: 12)).foregroundStyle(Palette.muted)
         }
     }
-    private func recentCard(_ study: Study) -> some View {
-        HStack(spacing: 18) {
-            BoardView(pieces: study.currentPieces, bottom: study.bottomSide, interactive: false)
-                .frame(width: 128, height: 142)
-            VStack(alignment: .leading, spacing: 10) {
-                Pill(title: "离线研究", color: Palette.teal)
-                Text(study.name).font(.system(size: 21, weight: .semibold, design: .serif)).foregroundStyle(Palette.ink).lineLimit(2)
-                Text(study.currentLine.isEmpty ? "从初始局面开始" : "研究到第 \(study.currentLine.count) 手")
-                    .font(.system(size: 12)).foregroundStyle(Palette.muted)
-                Label("继续推演", systemImage: "arrow.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Palette.teal)
-            }
-            Spacer(minLength: 0)
-        }.cardStyle()
-    }
+    private var recentID: UUID? { store.studies.first(where: { !$0.isDraft && $0.nodes.count > 1 })?.id }
     private func studyRow(_ study: Study) -> some View {
-        HStack(spacing: 14) {
-            BoardView(pieces: study.initialPieces, interactive: false).frame(width: 78, height: 87)
+        HStack(spacing: 12) {
+            BoardView(pieces: study.isDraft ? study.initialPieces : study.currentPieces, bottom: study.bottomSide, interactive: false)
+                .frame(width: 72, height: 80)
             VStack(alignment: .leading, spacing: 7) {
-                HStack {
-                    Text(study.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Palette.ink).lineLimit(1)
-                    if study.isDraft { Pill(title: "草稿") }
+                Text(study.name).font(.system(size: 16, weight: .medium)).foregroundStyle(Palette.ink).lineLimit(2)
+                if study.isDraft {
+                    Pill(title: "草稿")
+                } else if study.id == recentID {
+                    Pill(title: "继续研究", color: Palette.teal)
                 }
-                Text("\(study.initialSide.title)先行 · \(study.initialPieces.count) 枚棋子")
-                    .font(.system(size: 11)).foregroundStyle(Palette.muted)
-                Text(study.branchCount > 0 ? "\(study.nodes.count - 1) 手 · \(study.branchCount) 处分支" : "\(study.nodes.count - 1) 手推演")
-                    .font(.system(size: 11)).foregroundStyle(Palette.muted)
+                Text(study.nodes.count > 1 ? "第 \(study.currentLine.count) 手" + (study.branchCount > 0 ? " · \(study.branchCount) 处分支" : "") : "\(study.initialSide.title)先行 · \(study.initialPieces.count) 枚棋子")
+                    .font(.system(size: 12)).foregroundStyle(Palette.muted)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted.opacity(0.6))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
