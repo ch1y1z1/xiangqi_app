@@ -200,7 +200,11 @@ final class StudySession: ObservableObject {
             guard let self, self.active, self.generation == request, self.study.currentID == node else { return }
             self.isThinking = false
             guard !result.cancelled else { return }
-            if let error = result.error { self.errorMessage = error; self.aiPaused = self.aiSide != nil; return }
+            if let error = result.error {
+                self.errorMessage = error
+                if automatic && self.controlledByAI { self.aiPaused = true }
+                return
+            }
             guard let move = result.move, self.rules.legalMoves.contains(move) else { return }
             if let value = PositionEvaluation(result: result, side: position.sideToMove, milliseconds: budget) {
                 self.evaluations[node] = value; self.evaluationErrors[node] = nil
