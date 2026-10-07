@@ -35,6 +35,8 @@ struct XiangqiApp: App {
         #if DEBUG
         if CommandLine.arguments.contains("--preview-editor") {
             EditorView(previewStudy: Study.examples[1], selected: Study.examples[1].initialPieces.first?.square)
+        } else if CommandLine.arguments.contains("--preview-branches") {
+            NavigationStack { StudyView(previewFork: DevelopmentCheck.branchExample) }
         } else if CommandLine.arguments.contains("--preview-study") {
             NavigationStack { StudyView(study: Study.examples[1], persist: { _ in }) }
         } else {

@@ -10,13 +10,19 @@ struct StudyView: View {
     @State private var showingVariation = false
     @State private var choosingBranch = false
     @State private var choosingController = false
+    @State private var showingEvaluation = false
+    private var startsAnalysis = true
     @AppStorage("hapticsEnabled") private var haptics = true
 
     init(study: Study, persist: @escaping (Study) throws -> Void) {
         _session = StateObject(wrappedValue: StudySession(study: study, persist: persist))
     }
     #if DEBUG
-    init(previewSession: StudySession) { _session = StateObject(wrappedValue: previewSession) }
+    init(previewSession: StudySession) { _session = StateObject(wrappedValue: previewSession); startsAnalysis = false }
+    init(previewFork: Study) {
+        _session = StateObject(wrappedValue: StudySession(study: previewFork, persist: { _ in }))
+        _choosingBranch = State(initialValue: true)
+    }
     #endif
     var body: some View {
         GeometryReader { geometry in
@@ -50,9 +56,13 @@ struct StudyView: View {
             EditorView(study: study) { edited, _ in try session.applyEdit(edited) }
         }
         .sheet(isPresented: $showingVariation) { variation }
-        .confirmationDialog("选择下一手", isPresented: $choosingBranch, titleVisibility: .visible) {
-            ForEach(session.forwardChoices) { node in Button(session.study.label(for: node)) { session.jump(to: node.id) } }
-            Button("取消", role: .cancel) {}
+        .sheet(isPresented: $showingEvaluation) { EvaluationDetailView(session: session) }
+        .sheet(isPresented: $choosingBranch, onDismiss: session.closeBranches) {
+            if let parent = session.forkParentID {
+                BranchComparisonView(session: session, parentID: parent) { node in
+                    choosingBranch = false; session.jump(to: node.id)
+                }
+            }
         }
         .confirmationDialog("操作方式", isPresented: $choosingController, titleVisibility: .visible) {
             Button("双方手动") { session.setAI(nil) }
@@ -75,10 +85,16 @@ struct StudyView: View {
             Button("知道了") { session.errorMessage = nil }
         } message: { Text(session.errorMessage ?? "") }
         .onDisappear { session.leave() }
-        .onChange(of: scenePhase) { _, phase in if phase != .active { session.leave() } }
+        .onAppear {
+            if startsAnalysis { session.activate(); if choosingBranch { session.openBranches() } }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { session.leave() }
+            else if startsAnalysis { session.activate() }
+        }
     }
     private func boardWidth(_ size: CGSize) -> CGFloat {
-        min(max(1, size.width - 32), 478, max(1, size.height - (session.showLights ? 320 : 296)) * 0.9)
+        min(max(1, size.width - 32), 478, max(1, size.height - (session.showLights ? 328 : 304)) * 0.9)
     }
     private var header: some View {
         HStack(spacing: 4) {
@@ -94,8 +110,10 @@ struct StudyView: View {
                 Button(session.study.bottomSide == .red ? "黑方在下" : "红方在下", systemImage: "arrow.up.arrow.down") { session.flip() }
                 Toggle("吃子红绿灯", isOn: Binding(get: { session.showLights }, set: { _ in session.toggleLights() }))
                 Toggle("显示上一手", isOn: $session.showLastMove)
+                Toggle("显示当前局面评分", isOn: Binding(get: { session.showEvaluation }, set: session.setShowEvaluation))
+                Toggle("显示分支评分", isOn: Binding(get: { session.showBranchScores }, set: session.setShowBranchScores))
                 Toggle("震动反馈", isOn: $haptics)
-                Picker("思考时间", selection: $session.thinkMilliseconds) {
+                Picker("思考时间", selection: Binding(get: { session.thinkMilliseconds }, set: session.setThinkMilliseconds)) {
                     Text("快速 · 0.3 秒").tag(300)
                     Text("标准 · 1 秒").tag(1000)
                     Text("深入 · 3 秒").tag(3000)
@@ -111,9 +129,15 @@ struct StudyView: View {
                 .foregroundStyle(session.rules.inCheck ? Palette.red : Palette.ink)
             if session.isThinking { ProgressView().controlSize(.mini) }
             Spacer(minLength: 4)
-            Text(session.saved ? "第 \(session.study.currentLine.count) 手" : "未保存")
-                .font(.system(size: 11)).foregroundStyle(session.saved ? Palette.muted : Palette.red)
-        }.frame(height: 24)
+            if session.showEvaluation {
+                Button { showingEvaluation = true } label: {
+                    Text(session.evaluationText(for: session.study.currentID)).monospacedDigit()
+                        .font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.teal)
+                        .lineLimit(1).frame(minHeight: 44)
+                }.buttonStyle(.plain).accessibilityLabel("当前局面评分：" + session.evaluationText(for: session.study.currentID))
+            }
+            if !session.saved { Text("未保存").font(.system(size: 10)).foregroundStyle(Palette.red) }
+        }.frame(height: 32)
     }
     private func lightLegend(_ title: String, color: Color) -> some View {
         HStack(spacing: 4) { Circle().fill(color).frame(width: 5, height: 5); Text(title) }
@@ -133,13 +157,10 @@ struct StudyView: View {
                 .onAppear { proxy.scrollTo(session.study.currentID, anchor: .trailing) }
                 .onChange(of: session.study.currentID) { _, id in withAnimation { proxy.scrollTo(id, anchor: .trailing) } }
             }
-            if !branchChoices.isEmpty {
-                Menu {
-                    ForEach(branchChoices) { node in Button(session.study.label(for: node)) { session.jump(to: node.id) } }
-                } label: {
+            if session.forkParentID != nil {
+                Button { openBranches() } label: {
                     Image(systemName: "arrow.triangle.branch").frame(width: 44, height: 44)
-                }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-                    .foregroundStyle(Palette.teal).accessibilityLabel("选择推演分支")
+                }.buttonStyle(.plain).foregroundStyle(Palette.teal).accessibilityLabel("比较并选择推演分支")
             }
         }.padding(.horizontal, 8).background(Palette.card, in: RoundedRectangle(cornerRadius: 12))
     }
@@ -155,18 +176,19 @@ struct StudyView: View {
                 .background(current ? Palette.teal : Palette.paper, in: RoundedRectangle(cornerRadius: 9))
         }.buttonStyle(.plain).id(id)
     }
-    private var branchChoices: [StudyNode] {
-        if session.forwardChoices.count > 1 { return session.forwardChoices }
-        if let parent = session.study.currentNode.parentID.flatMap(session.study.node), parent.children.count > 1 {
-            return parent.children.compactMap(session.study.node)
-        }
-        return []
+    private func openBranches() {
+        session.openBranches(); choosingBranch = true
     }
     @ViewBuilder private var analysis: some View {
         if let suggestion = session.suggestion, let move = suggestion.move {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("AI 建议").font(.system(size: 11)).foregroundStyle(Palette.muted)
+                    HStack(spacing: 8) {
+                        Text("AI 建议").foregroundStyle(Palette.muted)
+                        Button { showingEvaluation = true } label: {
+                            Text(session.suggestionEvaluation?.text ?? "暂无评分").monospacedDigit().foregroundStyle(Palette.teal)
+                        }.buttonStyle(.plain)
+                    }.font(.system(size: 11))
                     Text(move.notation(in: session.pieces)).font(.system(size: 18, weight: .semibold)).foregroundStyle(Palette.teal)
                 }
                 Spacer()
@@ -196,7 +218,7 @@ struct StudyView: View {
                 ToolbarTile(title: "回退", icon: "chevron.left", enabled: session.study.currentNode.parentID != nil)
             }.disabled(session.study.currentNode.parentID == nil)
             if session.preferredNext == nil && session.forwardChoices.count > 1 {
-                Button { choosingBranch = true } label: { ToolbarTile(title: "选分支", icon: "arrow.triangle.branch") }
+                Button { openBranches() } label: { ToolbarTile(title: "选分支", icon: "arrow.triangle.branch") }
             } else {
                 Button { session.forward() } label: {
                     ToolbarTile(title: "前进", icon: "chevron.right", enabled: session.preferredNext != nil)
@@ -243,5 +265,111 @@ struct StudyView: View {
             pieces = ChessPosition.applying(move, to: pieces)
             return label
         }
+    }
+}
+
+struct BranchComparisonView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var session: StudySession
+    var parentID: UUID
+    var onChoose: (StudyNode) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("比较分支").font(.system(size: 17, weight: .semibold)); Spacer()
+                Button("完成") { dismiss() }.frame(minWidth: 44, minHeight: 44)
+            }
+            Toggle("显示分支评分", isOn: Binding(get: { session.showBranchScores }, set: session.setShowBranchScores))
+                .font(.system(size: 13))
+            if session.showBranchScores {
+                Text("红正黑负 · 比较各下一手后的局面，后续按最佳应对")
+                    .font(.system(size: 12)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
+            }
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(session.branches(at: parentID)) { node in
+                        Button { onChoose(node) } label: {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack(spacing: 8) {
+                                        Text(session.study.label(for: node)).font(.system(size: 16, weight: .medium))
+                                        if session.study.currentID == node.id { Text("当前").font(.system(size: 11)).foregroundStyle(Palette.teal) }
+                                    }
+                                    if session.showBranchScores {
+                                        Text(branchDetail(node.id))
+                                            .font(.system(size: 12)).foregroundStyle(Palette.muted).lineLimit(2)
+                                    }
+                                }
+                                Spacer(minLength: 4)
+                                if session.showBranchScores {
+                                    Text(session.evaluationText(for: node.id)).font(.system(size: 14, weight: .semibold))
+                                        .monospacedDigit().foregroundStyle(Palette.teal)
+                                }
+                                Image(systemName: "chevron.right").font(.system(size: 11)).foregroundStyle(Palette.muted)
+                            }.frame(minHeight: 56).padding(12)
+                                .background(Palette.card, in: RoundedRectangle(cornerRadius: 12))
+                                .contentShape(Rectangle())
+                        }.buttonStyle(.plain)
+                    }
+                }
+            }
+            if session.showBranchScores {
+                HStack {
+                    Text("分数用于比较优势，M 为将杀／判胜线的回合距离。")
+                        .font(.system(size: 11)).foregroundStyle(Palette.muted)
+                    Spacer(minLength: 4)
+                    Button("重新比较") { session.reanalyze(branches: parentID) }
+                        .font(.system(size: 12)).frame(minHeight: 44).disabled(session.isThinking)
+                }
+            }
+        }.padding(16).foregroundStyle(Palette.ink).background(Palette.paper).tint(Palette.teal)
+            #if os(iOS)
+            .presentationDetents([.medium, .large])
+            #else
+            .frame(minWidth: 350, idealWidth: 430, minHeight: 350, idealHeight: 600)
+            #endif
+    }
+    private func branchDetail(_ id: UUID) -> String {
+        if let comparison = session.comparison(for: id, at: parentID), let value = session.evaluation(for: id) {
+            return comparison + " · 深度 \(value.depth)"
+        }
+        return session.evaluation(for: id)?.detail ?? session.evaluationErrors[id] ?? "等待分析"
+    }
+}
+
+struct EvaluationDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var session: StudySession
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("局面评估").font(.system(size: 17, weight: .semibold)); Spacer()
+                Button("完成") { dismiss() }.frame(minWidth: 44, minHeight: 44)
+            }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(session.evaluationText(for: session.study.currentID)).font(.system(size: 28, weight: .semibold)).monospacedDigit()
+                    if let value = session.evaluation(for: session.study.currentID) {
+                        Text(value.detail).font(.system(size: 13)).foregroundStyle(Palette.muted)
+                    }
+                    if let error = session.evaluationErrors[session.study.currentID] {
+                        Text(error).font(.system(size: 13)).foregroundStyle(Palette.red)
+                    }
+                    Text("普通分数采用红方视角：正分偏红，负分偏黑。M 表示将杀或规则判胜的回合距离，≈M 表示尚未精确定界的胜线；≥／≤ 表示普通评分的下界／上界。已终局直接显示胜方或和棋。")
+                        .font(.system(size: 13)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
+                    Text("评分基于双方后续最佳应对，不代表胜率。比较候选着的差距，比当前评分与 AI 推荐评分的差值更有意义。")
+                        .font(.system(size: 13)).foregroundStyle(Palette.muted).fixedSize(horizontal: false, vertical: true)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if session.showEvaluation {
+                ActionButton(title: "重新分析", icon: "arrow.clockwise", disabled: session.isThinking) { session.reanalyze() }
+            }
+        }.padding(20).foregroundStyle(Palette.ink).background(Palette.paper).tint(Palette.teal)
+            #if os(iOS)
+            .presentationDetents([.medium, .large])
+            #else
+            .frame(minWidth: 350, idealWidth: 430, minHeight: 350)
+            #endif
     }
 }

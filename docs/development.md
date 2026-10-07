@@ -49,7 +49,7 @@ build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --chec
 build/DerivedData/Build/Products/Debug/Xiangqi.app/Contents/MacOS/Xiangqi --render-preview
 ```
 
-`--check` 检查合法走子、多分支复用、前进沿已选分支／未选分支需选择、摆棋选择不覆盖棋子、占位拖动拒绝与删除／清空撤销、JSON 保存恢复、改名保留分支、重新摆棋的历史副本与 AI 暂停、草稿校验、少量安全吃子样例、包内模型推荐与取消。它只使用临时残局目录，不改动用户棋库。`--render-preview` 将实际 SwiftUI 页面渲染到离屏视图，输出到 `build/previews/`；它包含普通页面、选中棋子、AI 建议、识别完成与原图校正状态，以及 375×667 和 375×553 pt 的紧凑内容区域；不截取桌面，不模拟用户输入。
+`--check` 检查合法走子、多分支复用、前进沿已选分支／未选分支需选择、摆棋选择不覆盖棋子、占位拖动拒绝与删除／清空撤销、JSON 保存恢复、改名保留分支、重新摆棋的历史副本与 AI 暂停、草稿校验、少量安全吃子样例、包内模型推荐与取消，以及评分换算、终局胜方、缓存、分支比较、AI 抢占与迟到回调拒绝。它只使用临时残局目录，不改动用户棋库。`--render-preview` 将实际 SwiftUI 页面渲染到离屏视图，输出到 `build/previews/`；它包含普通页面、选中棋子、AI 建议、识别完成与原图校正状态，以及 375×667 和 375×553 pt 的紧凑内容区域；不截取桌面，不模拟用户输入。
 
 `--check-image-import` 只验证图片导入：坐标换算、照片旋转与结构校验，DeepSeek 四档思考兼容，自定义地址解析、可选鉴权、Completions／Responses 图片与 JSON 请求格式、标准思考参数、模拟 HTTP 导入与不完整响应拒绝，以及文件上传、结果保存恢复、取消后迟到回调、HTTP 错误与中断任务恢复。使用虚拟密钥并拦截 HTTP，不读取个人密钥，不请求外网，不消耗额度；图片功能变更不需要重跑引擎探针。真实 DeepSeek／GPT Luna 测试和手动复现方法见 [图片识别说明](image-import.md)。
 
@@ -78,7 +78,9 @@ xcrun simctl launch booted com.chiyizi.xiangqi
 
 2026-10-07 UI 优化将摆棋与推演改为固定整页布局：同时显示两排棋子、删除只对选中棋子出现、常驻起点与 AI 操作，识别完成后明确导入并保留原图供校正，设置移除密钥延迟到保存。三平台构建及检查结果见 [UI 验证记录](ui-validation.json)，当前页面见 [SwiftUI 预览](previews/pages.png) 与 [iPhone 模拟器截图](previews/ios-pages.png)。
 
-Debug 版本可使用 `--preview-editor` 或 `--preview-study` 直接打开示例页面，用于模拟器布局截图；这些入口不保存示例编辑或推演，也不会发起识别。正常启动不带参数即可。它们只用于检查布局，不能替代从残局库导航、真实手势及真机触感验证。
+Debug 版本可使用 `--preview-editor`、`--preview-study` 或 `--preview-branches` 直接打开示例页面或分支比较面板，用于模拟器布局截图；这些入口不保存示例编辑或推演，也不会发起识别。正常启动不带参数即可。它们只用于检查布局，不能替代从残局库导航、真实手势及真机触感验证。
+
+2026-10-07 研究评分已通过三平台构建及 Mac／模拟器 `--check`。调度检查使用临时 UserDefaults 和可控回调，验证同一分叉点的下一手评价、黑方比较方向、独立开关、AI 优先、节点缓存、上下界与错误不参与精确差比较、失败手动重试，以及预算／初始局面变更与离开时取消。另用真实包内 NNUE 搜索确认评分可解析；预览的评分来自实际皮卡鱼有限搜索，不以静态数字替代引擎结果。模型不会联网下载或请求付费 API。具体结果见 [研究评分验证记录](evaluation-validation.json)、[评分预览](previews/evaluation.png) 与 [模拟器截图](previews/ios-evaluation.png)。
 
 ## 代码位置
 

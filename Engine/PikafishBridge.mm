@@ -38,7 +38,7 @@ static std::optional<PositionSetError> loadPosition(Position& position, std::deq
     return std::nullopt;
 }
 struct SearchOutput {
-    std::string best, pv;
+    std::string best, pv, bound;
     int depth = 0, score = 0;
     bool mate = false;
 };
@@ -65,6 +65,12 @@ struct SearchOutput {
     const bool check = bool(position.checkers());
     Value value = VALUE_ZERO;
     bool ruled = position.rule_judge(value);
+    const bool finished = ruled || !legal.count;
+    NSString *winner = @"";
+    if (finished && !(ruled && value == VALUE_DRAW)) {
+        Color color = ruled && value > 0 ? position.side_to_move() : ~position.side_to_move();
+        winner = color == WHITE ? @"red" : @"black";
+    }
     NSString *outcome = @"";
     if (ruled) outcome = value == VALUE_DRAW ? @"和棋" : value < 0 ? @"当前行棋方判负" : @"当前行棋方胜出";
     else if (!legal.count) outcome = check ? @"将死" : @"困毙";
@@ -78,7 +84,7 @@ struct SearchOutput {
         }
     }
     return @{@"fen": text(position.fen()), @"legalMoves": legal, @"check": @(check),
-             @"finished": @(ruled || !legal.count), @"outcome": outcome, @"captures": captures};
+             @"finished": @(finished), @"winner": winner, @"outcome": outcome, @"captures": captures};
 }
 
 - (uint64_t)beginRequest { return ++_generation; }
@@ -122,6 +128,7 @@ struct SearchOutput {
         _engine->set_on_update_full([output](const Engine::InfoFull& info) {
             output->depth = info.depth;
             output->pv = std::string(info.pv);
+            output->bound = std::string(info.bound);
             output->mate = info.score.is<Score::Mate>();
             output->score = output->mate ? info.score.get<Score::Mate>().plies : info.score.get<Score::InternalUnits>().value;
         });
@@ -141,7 +148,7 @@ struct SearchOutput {
         _engine->set_on_bestmove([](auto, auto) {});
         if (token != _generation) return @{@"cancelled": @YES};
         return @{@"bestMove": text(output->best), @"pv": text(output->pv), @"depth": @(output->depth),
-                 @"score": @(output->score), @"mate": @(output->mate)};
+                 @"score": @(output->score), @"mate": @(output->mate), @"bound": text(output->bound)};
     }
 }
 

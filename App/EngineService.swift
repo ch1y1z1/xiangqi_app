@@ -10,6 +10,7 @@ struct RuleSnapshot {
     var legalMoves: [ChessMove] = []
     var inCheck = false
     var finished = false
+    var winner: Side?
     var outcome = ""
     var captures: [SafeCapture] = []
     init(study: Study, hints: Bool = true) {
@@ -18,6 +19,7 @@ struct RuleSnapshot {
         legalMoves = (data["legalMoves"] as? [String] ?? []).compactMap(ChessMove.init(uci:))
         inCheck = data["check"] as? Bool ?? false
         finished = data["finished"] as? Bool ?? false
+        winner = (data["winner"] as? String).flatMap(Side.init(rawValue:))
         outcome = data["outcome"] as? String ?? ""
         captures = (data["captures"] as? [[String: String]] ?? []).compactMap {
             guard let raw = $0["move"], let move = ChessMove(uci: raw), let color = $0["side"], let side = Side(rawValue: color) else { return nil }
@@ -45,6 +47,8 @@ struct AIResult {
     var depth: Int
     var score: Int
     var isMate: Bool
+    var bound: ScoreBound
+    var hasScore: Bool
     var error: String?
     var cancelled: Bool
     init(_ data: [String: Any]) {
@@ -53,8 +57,54 @@ struct AIResult {
         depth = data["depth"] as? Int ?? 0
         score = data["score"] as? Int ?? 0
         isMate = data["mate"] as? Bool ?? false
+        bound = ScoreBound(rawValue: data["bound"] as? String ?? "") ?? .exact
+        hasScore = data["score"] as? Int != nil
         error = data["error"] as? String
         cancelled = data["cancelled"] as? Bool ?? false
+    }
+}
+
+enum ScoreBound: String {
+    case exact = "", lower = "lowerbound", upper = "upperbound"
+    var inverted: Self { self == .lower ? .upper : self == .upper ? .lower : .exact }
+    var symbol: String { self == .lower ? "≥" : self == .upper ? "≤" : "" }
+}
+
+/// Always from Red's perspective, tied to a node and a search budget by the session.
+struct PositionEvaluation {
+    enum Value { case score(Int), mate(Side, Int), terminal(Side?) }
+    var value: Value
+    var bound: ScoreBound = .exact
+    var depth: Int = 0
+    var milliseconds: Int
+
+    init?(result: AIResult, side: Side, milliseconds: Int) {
+        guard result.error == nil, !result.cancelled, result.hasScore, result.depth > 0 else { return nil }
+        let redScore = side == .red ? result.score : -result.score
+        if result.isMate {
+            let distance = abs((result.score > 0 ? result.score + 1 : result.score) / 2)
+            value = .mate(redScore > 0 ? .red : .black, distance)
+        } else { value = .score(redScore) }
+        bound = side == .red ? result.bound : result.bound.inverted
+        depth = result.depth; self.milliseconds = milliseconds
+    }
+    init(winner: Side?, milliseconds: Int) { value = .terminal(winner); self.milliseconds = milliseconds }
+    var text: String {
+        switch value {
+        case .score(let score): return "红 " + bound.symbol + String(format: "%+.2f", Double(score) / 100)
+        case .mate(let side, let distance): return (side == .red ? "红" : "黑") + " " + (bound == .exact ? "" : "≈") + "M\(distance)"
+        case .terminal(let winner): return winner.map { $0 == .red ? "红胜" : "黑胜" } ?? "和棋"
+        }
+    }
+    var detail: String {
+        if case .terminal = value { return "已结束 · 规则判定" }
+        let base = "深度 \(depth) · \(String(format: "%.1f", Double(milliseconds) / 1000)) 秒分析"
+        if case .mate = value, bound != .exact { return base + " · 初步胜线" }
+        return base
+    }
+    var centipawns: Int? {
+        if case .score(let score) = value, bound == .exact { return score }
+        return nil
     }
 }
 
