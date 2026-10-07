@@ -43,6 +43,22 @@
     "artifacts": ["previews/evaluation.png", "previews/ios-evaluation.png", "previews/pages.png", "previews/ios-pages.png"]
   },
   "storage_and_network": "Evaluation cache is session-only, JSON format is unchanged, and no remote API calls are made",
+  "advice_control_regression": {
+    "date": "2026-10-07",
+    "reproduced_before_fix": "CHECK_FAILED: An advice failure must not pause the opponent's AI",
+    "change": "Only failures of automatic move searches pause AI control; advice failures preserve the existing state",
+    "builds": "macOS, unsigned iOS and iOS Simulator passed",
+    "mac_core": "CHECK_PASSED",
+    "simulator_core": "CHECK_PASSED",
+    "checks": [
+      "Red and Black human turns: requesting and completing advice neither plays a move nor pauses the opponent's AI",
+      "Adopting advice, choosing another move, or moving before advice finishes starts the automatic opponent reply",
+      "Stopping advice or failing to obtain it preserves control and ignores late advice",
+      "An already paused control state remains paused; stopping or failing an automatic move still pauses control",
+      "With current evaluation enabled, advice preemption and old evaluation callbacks do not interrupt automatic replies"
+    ],
+    "normal_advice_path": "No pause reproduced in controlled session callbacks for a successful advice request; native button taps have not been replayed"
+  },
   "limitations": [
     "Offscreen rendering and launch captures do not verify native taps, dragging, haptics or navigation gestures",
     "Physical-device memory, battery usage and system suspension behavior have not been measured",

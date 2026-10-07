@@ -94,6 +94,7 @@ enum DevelopmentCheck {
             try require(hints("R1r1k4/9/9/9/4p4/9/9/9/R1p6/4K4 w - - 0 1").contains { $0.move == target }, "Pinned defender cannot recapture")
 
             try checkEvaluation()
+            try checkAdviceWithAIControl()
 
             let bridge = PikafishBridge()
             let network = Bundle.main.url(forResource: "pikafish", withExtension: "nnue")!.path
@@ -106,7 +107,7 @@ enum DevelopmentCheck {
             DispatchQueue.global().asyncAfter(deadline: .now() + 0.05, execute: stop)
             let cancelled = AIResult(bridge.search(fen: study.initialFEN, moves: [], networkPath: network, milliseconds: 3000, token: cancelToken))
             try require(cancelled.cancelled, "Search cancellation")
-            print("CHECK_PASSED: legal moves, chosen branches, safe editor selection and undo, JSON restore, draft validation, rename and setup editing, capture hints, bundled AI, evaluation scheduling and cancellation")
+            print("CHECK_PASSED: legal moves, chosen branches, safe editor selection and undo, JSON restore, draft validation, rename and setup editing, capture hints, bundled AI, evaluation scheduling and cancellation, advice preserving AI control")
         } catch {
             fputs("CHECK_FAILED: \(error.localizedDescription)\n", stderr)
             status = 1
@@ -197,6 +198,86 @@ enum DevelopmentCheck {
         black.reanalyze(branches: firstID)
         try require(blackRequests.count == 5, "Failed analysis can be retried explicitly")
         black.leave()
+    }
+
+    private static func checkAdviceWithAIControl() throws {
+        func require(_ condition: Bool, _ message: String) throws {
+            if !condition { throw NSError(domain: "AIControlCheck", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+        }
+        let suite = "xiangqi-ai-control-check-" + UUID().uuidString
+        let preferences = UserDefaults(suiteName: suite)!
+        defer { preferences.removePersistentDomain(forName: suite) }
+        preferences.set(false, forKey: "showPositionEvaluation")
+        preferences.set(false, forKey: "showBranchEvaluation")
+        func result(_ move: ChessMove) -> AIResult {
+            AIResult(["bestMove": move.uci, "score": 20, "depth": 12])
+        }
+        for human in [Side.red, .black] {
+            for action in ["adopt", "other", "pending", "stop", "failure"] {
+                let study = Study(name: "Advice and control", pieces: ChessPosition.pieces(fen: ChessPosition.initialFEN), side: human)
+                var requests: [(Study, (AIResult) -> Void)] = []
+                let session = StudySession(study: study, persist: { _ in }, preferences: preferences,
+                                           search: { position, _, done in requests.append((position, done)) }, stopSearch: {})
+                session.activate(); session.setAI(human.opponent)
+                let recommended = session.rules.legalMoves[0], other = session.rules.legalMoves[1]
+                session.recommend()
+                try require(requests.count == 1 && session.aiSide == human.opponent && !session.aiPaused && session.study.currentID == study.rootID,
+                            "Requesting human advice preserves AI control and does not play a move")
+                switch action {
+                case "failure":
+                    requests[0].1(AIResult(["error": "Advice unavailable"]))
+                    try require(session.errorMessage != nil && !session.aiPaused, "An advice failure must not pause the opponent's AI")
+                case "stop":
+                    session.stop(); requests[0].1(result(recommended))
+                    try require(session.suggestion == nil && !session.aiPaused, "Stopping advice ignores its late result and preserves AI control")
+                case "pending": break
+                default:
+                    requests[0].1(result(recommended))
+                    try require(session.suggestion?.move == recommended && !session.aiPaused && session.study.currentID == study.rootID,
+                                "Completed advice waits for the human move and preserves AI control")
+                }
+                if action == "adopt" { session.adopt() }
+                else { session.drag(from: other.from, to: other.to) }
+                try require(requests.count == 2 && requests[1].0.currentLine.count == 1 && requests[1].0.sideToMove == human.opponent && session.isThinking && !session.aiPaused,
+                            "Adopting advice or playing another move starts the opponent's automatic reply")
+                if action == "pending" {
+                    requests[0].1(result(recommended))
+                    try require(session.suggestion == nil && session.isThinking, "Advice cannot land after the human moves")
+                }
+                let reply = session.rules.legalMoves[0]
+                requests[1].1(result(reply))
+                try require(session.study.currentLine.count == 2 && session.side == human && !session.aiPaused && session.suggestion == nil,
+                            "The controlled opponent plays its reply automatically")
+                session.leave()
+            }
+        }
+        var automaticRequests: [(AIResult) -> Void] = []
+        let automatic = StudySession(study: Study.examples[2], persist: { _ in }, preferences: preferences,
+                                     search: { _, _, done in automaticRequests.append(done) }, stopSearch: {})
+        automatic.activate(); automatic.setAI(.red)
+        automaticRequests[0](AIResult(["error": "Automatic search unavailable"]))
+        try require(automatic.aiPaused && !automatic.isThinking, "An automatic reply failure still pauses AI control explicitly")
+        automatic.recommend(); automaticRequests[1](result(automatic.rules.legalMoves[0]))
+        try require(automatic.aiPaused && automatic.suggestion != nil, "Advice must also preserve an already paused control state")
+        automatic.resumeAI(); automatic.stop(); automaticRequests[2](result(automatic.rules.legalMoves[0]))
+        try require(automatic.aiPaused && automatic.study.currentID == automatic.study.rootID, "Stopping an automatic search still pauses control and rejects its late move")
+        automatic.leave()
+
+        preferences.set(true, forKey: "showPositionEvaluation")
+        var scoredRequests: [(Study, (AIResult) -> Void)] = []
+        let scored = StudySession(study: Study.examples[2], persist: { _ in }, preferences: preferences,
+                                  search: { position, _, done in scoredRequests.append((position, done)) }, stopSearch: {})
+        scored.activate(); scored.setAI(.black); scored.recommend()
+        let move = scored.rules.legalMoves[0]
+        scoredRequests[2].1(result(move)); scored.adopt()
+        try require(scoredRequests.count == 4 && scored.isThinking && !scored.aiPaused, "Advice preempts position evaluation without disabling the automatic reply")
+        scoredRequests[0].1(AIResult(["error": "Cancelled evaluation"]))
+        scoredRequests[1].1(result(move))
+        try require(scored.isThinking && scored.suggestion == nil && !scored.aiPaused, "Old evaluation callbacks cannot interrupt the automatic reply")
+        scoredRequests[3].1(result(scored.rules.legalMoves[0]))
+        try require(scored.study.currentLine.count == 2 && scoredRequests.count == 5 && scored.analyzingID == scored.study.currentID && !scored.aiPaused,
+                    "Current-position evaluation resumes after the automatic reply")
+        scored.leave()
     }
 
     #if os(macOS)
